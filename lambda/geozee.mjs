@@ -15,6 +15,26 @@ function pacificDate() {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 }
 
+// Today's board is only good until the puzzle rolls over at midnight Pacific.
+function secondsUntilPacificMidnight() {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Los_Angeles',
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).formatToParts(new Date());
+    const value = (type) => Number(parts.find(part => part.type === type).value);
+    return 86400 - ((value('hour') % 24) * 3600 + value('minute') * 60 + value('second'));
+}
+
+// Past rounds are settled, future ones can still be pinned, today's expires at the rollover.
+function cacheControl(date, today) {
+    if (date < today) return 'public, max-age=86400';
+    if (date > today) return 'public, max-age=300';
+    return 'public, max-age=' + secondsUntilPacificMidnight();
+}
+
 async function getText(url) {
     const res = await fetch(url);
     if (!res.ok) {
@@ -205,12 +225,14 @@ function buildBoard(loaded, date) {
 }
 
 export const handler = async (event) => {
+    const today = pacificDate();
+    const asked = event && event.queryStringParameters && event.queryStringParameters.date;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(asked || '') ? asked : today;
     const headers = {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': cacheControl(date, today)
     };
-    const asked = event && event.queryStringParameters && event.queryStringParameters.date;
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(asked || '') ? asked : pacificDate();
 
     try {
         if (!boardCache[date]) {
@@ -224,6 +246,7 @@ export const handler = async (event) => {
         // A failed load shouldn't poison every later invocation.
         gamePromise = null;
         console.error('Could not build the Geozee board:', error);
-        return { statusCode: 502, headers, body: JSON.stringify({ error: String(error.message || error) }) };
+        const failed = Object.assign({}, headers, { 'Cache-Control': 'no-store' });
+        return { statusCode: 502, headers: failed, body: JSON.stringify({ error: String(error.message || error) }) };
     }
 };
