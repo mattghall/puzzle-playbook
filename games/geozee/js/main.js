@@ -2,10 +2,10 @@ importAll(require.context('../style', false, /\.css$/));
 import '@shared/style/base.css';
 import feather from 'feather-icons';
 import { createDragEngine } from '@shared/js/dragdrop';
-import { startLoading, endLoading } from '@shared/js/loading';
+import { startChase } from '@shared/js/skeleton.js';
 import { attachDatePicker } from '@shared/js/dates';
 import { loadBoard } from '@shared/js/board';
-const mainJsVersion = 1.3;
+const mainJsVersion = 1.5;
 
 function importAll(r) {
     r.keys().forEach(r);
@@ -194,13 +194,37 @@ function renderPreview() {
     $('#flag-preview').append(name);
 }
 
+// Clockwise trip around the outside of the 3x3 board, leaving the middle slot alone.
+const skeletonRing = [0, 1, 2, 5, 8, 7, 6, 3];
+
+// Nine empty slots and flag cells so the board is full size before it's dealt; min-height holds them.
+function renderSkeleton() {
+    $('#board').empty();
+    $('#queue').empty();
+    const slots = [];
+    const cells = [];
+    for (let i = 0; i < 9; i++) {
+        const slot = document.createElement('div');
+        slot.classList.add('slot', 'skeleton');
+        slots.push(slot);
+        $('#board').append(slot);
+
+        const cell = document.createElement('div');
+        cell.classList.add('flag-slot', 'skeleton');
+        cells.push(cell);
+        $('#queue').append(cell);
+    }
+    startChase(skeletonRing.map(i => slots[i]));
+    startChase(cells);
+    $('#queue-label').text('Countries');
+}
+
 function renderAll() {
     renderBoard();
     renderQueue();
     renderPicks();
     renderPreview();
     feather.replace();
-    endLoading();
 }
 
 // The classes only bite below the lg breakpoint, so desktop always shows both columns.
@@ -236,7 +260,6 @@ function returnCountry(code) {
 }
 
 function resetBoard() {
-    startLoading();
     placements = {};
     selectedCode = null;
     previewCode = null;
@@ -244,7 +267,7 @@ function resetBoard() {
 }
 
 async function initializeGame(date) {
-    startLoading();
+    renderSkeleton();
     $('#fetch-error').hide();
     const result = await loadBoard({
         game: 'geozee',
@@ -266,7 +289,6 @@ async function initializeGame(date) {
 
 $(function () {
     feather.replace();
-    $('#loading-overlay').show();
 
     $('#main-version-span').text(mainJsVersion);
 

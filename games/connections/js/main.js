@@ -5,10 +5,10 @@ importAll(require.context('../style', false, /\.css$/));
 // import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import feather from 'feather-icons';
 import { createDragEngine } from '@shared/js/dragdrop.js';
-import { startLoading, endLoading } from '@shared/js/loading.js';
 import { attachDatePicker } from '@shared/js/dates.js';
 import { loadBoard } from '@shared/js/board.js';
-const mainJsVersion = 1.4;
+import { startChase } from '@shared/js/skeleton.js';
+const mainJsVersion = 1.6;
 
 function importAll(r) {
     r.keys().forEach(r);
@@ -19,6 +19,24 @@ let colors = Object.keys(lockedColor);
 
 // Declare the base array at the top of the file
 let boxes = [];
+
+// Clockwise trip around the outside of the 4x4 grid, leaving the middle four alone.
+const skeletonRing = [0, 1, 2, 3, 7, 11, 15, 14, 13, 12, 8, 4];
+
+// Sixteen blank tiles so the grid is full size before the words land. The space holds the line height.
+function renderSkeleton() {
+    $('#grid').empty();
+    const tiles = [];
+    for (let i = 0; i < 16; i++) {
+        const div = document.createElement('div');
+        div.classList.add('box', 'white-guess', 'skeleton');
+        div.textContent = '\u00a0';
+        tiles.push(div);
+        $('#grid').append(div);
+    }
+    startChase(skeletonRing.map(i => tiles[i]));
+    adjustPageSize();
+}
 
 function renderGrid() {
     $('#grid').empty();
@@ -37,7 +55,6 @@ function renderGrid() {
     });
     updateLocks();
     adjustPageSize();
-    endLoading();
 }
 
 export function swapBoxes(el1, el2) {
@@ -99,7 +116,6 @@ function sortBoxes() {
 }
 
 function resetBoard() {
-    startLoading();
     // Reset each box to its default state
     boxes.forEach(box => {
         box.color = "white"; // Reset color to white
@@ -192,7 +208,6 @@ function adjustPageSize() {
 
 $(function () {
     feather.replace();
-    $('#loading-overlay').show();
     document.body.style.overflow = 'hidden'; // Disable scrolling
 
 
@@ -209,6 +224,7 @@ $(function () {
     }
 
     async function initializeGame(date = '') {
+        renderSkeleton();
         const result = await loadBoard({
             game: 'connections',
             date: date,
@@ -235,7 +251,6 @@ $(function () {
 
     // Initial rendering of the game with today's date
     initializeGame(attachDatePicker('#date-picker', function (picked) {
-        startLoading();
         console.log('Resetting board for new date ' + picked);
         initializeGame(picked);
     }));

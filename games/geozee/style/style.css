@@ -7,6 +7,7 @@
   --selected-color: #7d9b76;
   --muted-color: #6b6b6b;
   --black-color: black;
+  --skeleton-color: #7d9b76;
 }
 
 #style-version-span:after {
@@ -27,21 +28,6 @@ body {
   padding-bottom: 80px;
 }
 
-
-.spinner {
-  width: 60px;
-  height: 60px;
-  border: 6px solid var(--slot-border-color);
-  border-top-color: var(--selected-color);
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 
 /* Nine categories, always three across so the board keeps its shape on a phone */

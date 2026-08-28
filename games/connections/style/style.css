@@ -13,6 +13,7 @@
   --blue-hover-color: #006FDC;
   --black-color: black;
   --box-background-color: #e3e3e3;
+  --skeleton-color: #006FDC;
 }
 
 
@@ -60,11 +61,18 @@ body {
   align-items: flex-start;
 }
 
+/* The container is a flex row, so pin its child or the grid shrinks to fit whatever is inside */
+.container > .row {
+  width: 100%;
+}
+
 /* Ensure the grid always has 4 columns, even on mobile */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+  /* Fill the container so the width never depends on the words, which aren't loaded yet */
+  width: 100%;
 }
 
 @media (max-width: 768px) {
