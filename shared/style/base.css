@@ -37,8 +37,7 @@
   margin-bottom: 5px;
 }
 
-/* Scoped to .game-btn rather than the bare button element, which used to leak into
-   every button on the page including the footer links. */
+/* Scoped so this stops leaking onto every button on the page, footer links included */
 .game-btn {
   font-size: 1rem;
   padding: 15px;
@@ -149,8 +148,7 @@ button.game-btn {
   text-align: center;
 }
 
-/* WebKit won't stretch the inner date text to a fixed height, so it sticks to the top.
-   Making the input a flex container is what actually centers it. */
+/* WebKit won't stretch the inner date text, so flex is what actually centers it */
 #buttons-div input[type="date"].game-btn {
   display: flex;
   align-items: center;
