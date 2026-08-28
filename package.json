@@ -1,8 +1,8 @@
 {
-  "name": "connections",
+  "name": "puzzle-playbook",
   "version": "1.0.0",
-  "description": "A web-based interactive game inspired by the New York Times Connections. This game allows users to shuffle, sort, and reset boxes in a grid while maintaining color and state properties. The game is built using HTML, CSS, and JavaScript.",
-  "main": "index.js",
+  "description": "Scratchpads for daily puzzle games. Plan your moves before you commit them.",
+  "main": "webpack.config.js",
   "scripts": {
     "start": "webpack serve",
     "build": "webpack --config webpack.config.js",
@@ -15,8 +15,7 @@
   "dependencies": {
     "bootstrap": "^5.3.3",
     "feather-icons": "^4.29.2",
-    "jquery": "^3.7.1",
-    "leaflet": "^1.9.4"
+    "jquery": "^3.7.1"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^12.0.2",
