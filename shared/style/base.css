@@ -36,3 +36,137 @@
   width: 100%;
   margin-bottom: 5px;
 }
+
+/* Scoped to .game-btn rather than the bare button element, which used to leak into
+   every button on the page including the footer links. */
+.game-btn {
+  font-size: 1rem;
+  padding: 15px;
+  border-radius: 5px;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+button.game-btn {
+  border: none;
+}
+
+.btn-primary {
+  background-color: #1897FF;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #006FDC;
+}
+
+.btn-secondary {
+  background-color: #FFB800;
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background-color: #FF9500;
+}
+
+.btn-danger {
+  background-color: #F44336;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background-color: #D32F2F;
+}
+
+.game-btn:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18);
+}
+
+.game-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Bootstrap rows carry negative side margins, which push the footer past the viewport */
+#footer-row {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px 0;
+  background-color: #2b2b2b;
+  color: #fff;
+  text-align: center;
+  font-size: 13px;
+  z-index: 10;
+}
+
+#footer-title {
+  color: #b9b9b9;
+  letter-spacing: 0.2px;
+}
+
+.social a {
+  margin: 0 4px;
+  padding: 3px 10px;
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.social a:hover {
+  border-color: #FFB800;
+  background-color: transparent;
+  color: #FFB800;
+}
+
+.social svg {
+  width: 15px;
+  height: 15px;
+  vertical-align: -2px;
+}
+
+/* The native date input has a wide intrinsic size, so the column has to be allowed to shrink */
+#buttons-div [class*="col-"] {
+  min-width: 0;
+}
+
+/* One rule for both buttons and the date input, so the row always lines up */
+#buttons-div .game-btn {
+  height: 48px;
+  padding: 4px 8px;
+  margin-bottom: 5px;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+/* The date input keeps a real border, otherwise it reads as a flat block next to the buttons */
+#buttons-div input.game-btn {
+  border: 1px solid #ced4da;
+  background-color: #fff;
+  color: #333;
+  text-align: center;
+}
+
+/* WebKit won't stretch the inner date text to a fixed height, so it sticks to the top.
+   Making the input a flex container is what actually centers it. */
+#buttons-div input[type="date"].game-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#buttons-div input.game-btn:focus {
+  border-color: #1897FF;
+  box-shadow: 0 0 0 0.2rem rgba(24, 151, 255, 0.25);
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  #buttons-div .game-btn {
+    height: 44px;
+    padding: 4px;
+    font-size: 0.8rem;
+  }
+}

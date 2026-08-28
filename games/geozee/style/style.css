@@ -24,7 +24,7 @@ body {
   font-family: Arial, sans-serif;
   background-color: var(--board-bg-color);
   /* Room for the pinned footer */
-  padding-bottom: 110px;
+  padding-bottom: 80px;
 }
 
 
@@ -43,18 +43,6 @@ body {
   }
 }
 
-
-/* The native date input has a wide intrinsic size, so the column has to be allowed to shrink */
-#buttons-div [class*="col-"] {
-  min-width: 0;
-}
-
-/* One rule for both buttons and the date input, so the three always match */
-#buttons-div .game-btn {
-  height: 48px;
-  padding: 4px 8px;
-  font-size: 1rem;
-}
 
 /* Nine categories, always three across so the board keeps its shape on a phone */
 .board {
@@ -278,70 +266,6 @@ body {
   line-height: 1;
 }
 
-button {
-  font-size: 1rem;
-  padding: 15px;
-  border-radius: 5px;
-  border: none;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
-  margin-bottom: 10px;
-}
-
-button:hover {
-  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.2);
-}
-
-.btn-primary {
-  background-color: #1897FF;
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background-color: #006FDC;
-}
-
-.btn-secondary {
-  background-color: #FFB800;
-  color: #fff;
-}
-
-.btn-secondary:hover {
-  background-color: #FF9500;
-}
-
-.btn-danger {
-  background-color: #F44336;
-  color: #fff;
-}
-
-.btn-danger:hover {
-  background-color: #D32F2F;
-}
-
-/* Bootstrap rows carry negative side margins, which push the footer past the viewport */
-#footer-row {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  margin: 0;
-  background-color: #333;
-  color: white;
-  padding: 5px 0;
-  text-align: center;
-  font-size: 14px;
-  z-index: 10;
-}
-
-.social a {
-  margin: 0 6px;
-  color: #fff;
-}
-
-.social a:hover {
-  color: #FFB800;
-}
-
 @media (max-width: 991.98px) {
   .mobile-hidden {
     display: none;
@@ -349,12 +273,6 @@ button:hover {
 }
 
 @media (max-width: 768px) {
-  #buttons-div .game-btn {
-    height: 44px;
-    padding: 4px;
-    font-size: 0.8rem;
-  }
-
   .board {
     gap: 5px;
   }

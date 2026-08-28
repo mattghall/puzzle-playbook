@@ -39,7 +39,7 @@ function buildCountryBox(code, inStrip) {
     div.classList.add('country');
     div.dataset.code = code;
     const placed = !!slotOf(code);
-    // The strip keeps Geozee's deal order, so a placed country greys out in place rather than leaving.
+    // The strip keeps Geozee's deal order, so a placed country grays out in place rather than leaving.
     if (inStrip && placed) {
         div.classList.add('used');
     } else {
@@ -348,7 +348,7 @@ function attachCountryEvents(div) {
         }
     };
 
-    // The greyed copy in the strip is a marker, not something to pick up.
+    // The grayed copy in the strip is a marker, not something to pick up.
     if ($(div).hasClass('used')) {
         $(div).on('click', function (e) {
             e.stopPropagation();

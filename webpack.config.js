@@ -48,6 +48,7 @@ module.exports = {
                 ...gameCopies,
                 { from: 'src/landing/index.html', to: path.join(dist, 'index.html') },
                 { from: 'src/landing/style.css', to: path.join(dist, 'landing.css') },
+                { from: 'shared/style/base.css', to: path.join(dist, 'base.css') },
                 { from: 'dep', to: path.join(dist, 'dep') },
                 { from: 'img', to: path.join(dist, 'img') },
             ],

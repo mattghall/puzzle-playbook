@@ -1,5 +1,14 @@
 body {
     background-color: #f7f7f8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    /* Keeps the footer at the bottom of the window while the page is still short */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+body > .container {
+    flex: 1 0 auto;
 }
 
 #header {
@@ -84,9 +93,35 @@ body {
     background-color: #ba81c5;
 }
 
+/* Sits with the footer bar at the bottom rather than trailing the cards */
 #footer {
+    flex-shrink: 0;
     text-align: center;
     color: #6c757d;
     font-size: 0.85rem;
-    margin: 50px 0 30px;
+    margin: 40px 0 12px;
+    padding: 0 12px;
+}
+
+/* The landing page scrolls, so the shared footer sits in flow instead of pinned */
+#footer-row {
+    position: static;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+/* The cards are the focus, so the header shouldn't eat the fold on a phone */
+@media (max-width: 575.98px) {
+    #header {
+        margin-top: 24px;
+        margin-bottom: 20px;
+    }
+
+    #header h1 {
+        font-size: 1.9rem;
+    }
+
+    .game-card {
+        padding: 18px;
+    }
 }
