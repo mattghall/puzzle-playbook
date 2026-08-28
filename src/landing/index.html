@@ -4,17 +4,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puzzle Playbook</title>
     <link rel="icon" type="image/x-icon" href="/img/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+    <title>Puzzle Playbook</title>
+    <meta name="description"
+        content="Scratchpads for daily puzzle games. Plan every move before you commit to one.">
+    <!-- Facebook Meta -->
+    <meta property="og:url" content="https://playbook.trailmatt.com" />
+    <meta property="og:title" content="Puzzle Playbook" />
+    <meta property="og:description"
+        content="Scratchpads for daily puzzle games. Plan every move before you commit to one." />
+    <meta property="og:image" content="https://playbook.trailmatt.com/img/og-image.jpg" />
+    <!-- Twitter Meta -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Puzzle Playbook" />
+    <meta name="twitter:url" content="https://playbook.trailmatt.com" />
+    <meta name="twitter:site" content="@MattGHall" />
+    <meta name="twitter:creator" content="@MattGHall">
+    <meta name="twitter:description"
+        content="Scratchpads for daily puzzle games. Plan every move before you commit to one." />
+    <meta name="twitter:image" content="https://playbook.trailmatt.com/img/og-image.jpg" />
+
     <link href="/dep/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/landing.css">
 </head>
 
 <body>
-    <div class="container mt-4">
-        <h1>Puzzle Playbook</h1>
-        <ul>
-            <li><a href="/connections">Connections Helper</a></li>
-        </ul>
+    <div class="container">
+        <div id="header">
+            <h1>Puzzle Playbook</h1>
+            <p id="tagline">Scratchpads for the daily puzzles. Drag things around, try every
+                arrangement, and only commit once you're sure.</p>
+        </div>
+
+        <div class="row g-3 justify-content-center">
+            <div class="col-12 col-md-6 col-lg-5">
+                <a class="game-card" href="/connections">
+                    <div class="game-swatches">
+                        <div class="swatch swatch-yellow"></div>
+                        <div class="swatch swatch-green"></div>
+                        <div class="swatch swatch-blue"></div>
+                        <div class="swatch swatch-purple"></div>
+                    </div>
+                    <h2>Connections Helper</h2>
+                    <p>Sixteen words, four groups. Colour them in and shuffle until the tricky
+                        category shows itself.</p>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-5">
+                <a class="game-card" href="/geozee">
+                    <div class="game-swatches">
+                        <div class="swatch swatch-flag">🇧🇪</div>
+                        <div class="swatch swatch-flag">🇰🇿</div>
+                        <div class="swatch swatch-flag">🇳🇦</div>
+                        <div class="swatch swatch-flag">🇩🇯</div>
+                    </div>
+                    <h2>Geozee Helper</h2>
+                    <p>Nine flags, nine categories, one guess. Work out the whole grid before you
+                        spend it.</p>
+                </a>
+            </div>
+        </div>
+
+        <div id="footer">
+            Built by <a href="https://trailmatt.com">Matt Hall</a>. Not affiliated with any of the
+            games these help you play.
+        </div>
     </div>
 </body>
 

@@ -47,6 +47,7 @@ module.exports = {
             patterns: [
                 ...gameCopies,
                 { from: 'src/landing/index.html', to: path.join(dist, 'index.html') },
+                { from: 'src/landing/style.css', to: path.join(dist, 'landing.css') },
                 { from: 'dep', to: path.join(dist, 'dep') },
                 { from: 'img', to: path.join(dist, 'img') },
             ],
