@@ -1,0 +1,59 @@
+name: Deploy to playbook.trailmatt.com
+
+on:
+  push:
+    branches: [release]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-playbook
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      # Short max-age because the bundle filenames aren't hashed, so a long cache
+      # would pin people to old JS.
+      - name: Sync to S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.SITE_BUCKET }} --delete \
+            --cache-control "public,max-age=300" \
+            --no-progress
+
+      - name: Deploy the board Lambdas
+        run: |
+          for game in connections geozee; do
+            rm -rf build-lambda && mkdir build-lambda
+            cp "lambda/$game.mjs" build-lambda/index.mjs
+            (cd build-lambda && zip -q -r ../board-lambda.zip index.mjs)
+            aws lambda update-function-code \
+              --function-name "$game-scraper" \
+              --zip-file fileb://board-lambda.zip \
+              --no-cli-pager > /dev/null
+            rm board-lambda.zip
+          done
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*" --no-cli-pager > /dev/null
