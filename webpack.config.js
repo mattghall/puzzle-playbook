@@ -1,6 +1,7 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'dist');
 // Each game builds into its own folder so it can be served from /<game> with a clean URL.
@@ -8,9 +9,18 @@ const games = ['connections', 'geozee'];
 
 const gameEntries = {};
 const gameCopies = [];
+const gamePages = [];
 games.forEach((game) => {
     gameEntries[game + '/main'] = './games/' + game + '/js/main.js';
-    gameCopies.push({ from: 'games/' + game + '/index.html', to: path.join(dist, game, 'index.html') });
+    // The tags are injected rather than hardcoded so the hashed filenames stay in sync.
+    gamePages.push(new HtmlWebpackPlugin({
+        template: 'games/' + game + '/index.html',
+        filename: path.join(game, 'index.html'),
+        chunks: [game + '/main'],
+        inject: 'head',
+        scriptLoading: 'blocking',
+        minify: false,
+    }));
     gameCopies.push({ from: 'games/' + game + '/manifest.json', to: path.join(dist, game, 'manifest.json'), noErrorOnMissing: true });
     gameCopies.push({ from: 'games/' + game + '/js/service-worker.js', to: path.join(dist, game, 'service-worker.js'), noErrorOnMissing: true });
 });
@@ -18,8 +28,9 @@ games.forEach((game) => {
 module.exports = {
     entry: gameEntries,
     output: {
-        filename: '[name].bundle.js',
+        filename: '[name].[contenthash].bundle.js',
         path: dist,
+        publicPath: '/',
         clean: true,
     },
     devtool: 'source-map',
@@ -41,8 +52,9 @@ module.exports = {
     },
     plugins: [
         new MiniCssExtractPlugin({
-            filename: '[name].css',
+            filename: '[name].[contenthash].css',
         }),
+        ...gamePages,
         new CopyWebpackPlugin({
             patterns: [
                 ...gameCopies,

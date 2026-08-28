@@ -31,13 +31,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
 
-      # Short max-age because the bundle filenames aren't hashed, so a long cache
-      # would pin people to old JS.
+      # Hashed bundles cache forever, but the pages pointing at them can't or a release 404s.
       - name: Sync to S3
         run: |
-          aws s3 sync dist/ s3://${{ secrets.SITE_BUCKET }} --delete \
-            --cache-control "public,max-age=300" \
-            --no-progress
+          aws s3 sync dist/ s3://${{ secrets.SITE_BUCKET }} --delete --no-progress \
+            --exclude "*" --include "*/main.*.bundle.js" --include "*/main.*.css" \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync dist/ s3://${{ secrets.SITE_BUCKET }} --delete --no-progress \
+            --exclude "*" --include "*.html" \
+            --cache-control "no-cache"
+          aws s3 sync dist/ s3://${{ secrets.SITE_BUCKET }} --delete --no-progress \
+            --exclude "*.html" --exclude "*/main.*.bundle.js" --exclude "*/main.*.css" \
+            --cache-control "public,max-age=300"
 
       - name: Deploy the board Lambdas
         run: |
