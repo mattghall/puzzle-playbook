@@ -1,66 +1,38 @@
-import https from 'https';
+const PUZZLE_URL = 'https://www.nytimes.com/svc/connections/v2/';
 
-// Function to get the current date in Pacific Time zone and format it as YYYY-MM-DD
-const getPacificDate = () => {
-  const now = new Date();
-  const pacificOffset = -7; // Pacific Time offset (adjust for daylight savings if necessary)
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const pacificTime = new Date(utc + (3600000 * pacificOffset));
+// en-CA already formats as YYYY-MM-DD, and the time zone does the daylight savings work.
+function pacificDate() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+}
 
-  const year = pacificTime.getFullYear();
-  const month = String(pacificTime.getMonth() + 1).padStart(2, '0'); // Month is zero-indexed
-  const day = String(pacificTime.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-};
-
-// Function to fetch JSON data from the provided URL
-const fetchJsonData = (url) => {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        resolve(JSON.parse(data));
-      });
-    }).on('error', (err) => {
-      reject(err);
-    });
-  });
-};
-
-// Lambda handler
 export const handler = async (event) => {
-  try {
-    // Get today's date in Pacific Time and format it as YYYY-MM-DD
-    const date = getPacificDate();
-
-    // Construct the URL using today's date
-    const url = `https://www.nytimes.com/svc/connections/v2/${date}.json`;
-
-    // Fetch the JSON data from the URL
-    const data = await fetchJsonData(url);
-
-    // Flatten the cards from all categories into one list and map to the desired format
-    // Step 1: Extract all content words into a list
-const contentWords = data.categories.flatMap(category =>
-  category.cards.map(card => card.content)
-);
-
-// Step 2: Sort the list alphabetically
-const sortedWords = contentWords.sort();
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(sortedWords, null, 2),
+    const headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
     };
-  } catch (error) {
-    console.error('Error fetching or parsing the JSON data:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'Error fetching or parsing the JSON data', error }),
-    };
-  }
+    const asked = event && event.queryStringParameters && event.queryStringParameters.date;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(asked || '') ? asked : pacificDate();
+
+    try {
+        const response = await fetch(PUZZLE_URL + date + '.json');
+        // A date with no puzzle returns an error page, so this has to be checked before parsing.
+        if (!response.ok) {
+            const message = response.status === 404
+                ? 'No Connections puzzle for ' + date
+                : 'The puzzle feed returned HTTP ' + response.status + ' for ' + date;
+            return { statusCode: response.status === 404 ? 404 : 502, headers, body: JSON.stringify({ error: message }) };
+        }
+
+        const data = await response.json();
+        const words = data.categories.flatMap(category => category.cards.map(card => card.content));
+        if (words.length === 0) {
+            throw new Error('The puzzle for ' + date + ' had no words');
+        }
+
+        // Sorted so the board never arrives grouped by category.
+        return { statusCode: 200, headers, body: JSON.stringify(words.sort(), null, 2) };
+    } catch (error) {
+        console.error('Could not build the Connections board:', error);
+        return { statusCode: 502, headers, body: JSON.stringify({ error: String(error.message || error) }) };
+    }
 };
