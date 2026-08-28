@@ -26,6 +26,8 @@ async function getText(url) {
 // Pulls a module and everything it imports into /tmp so node can import it from disk.
 async function downloadGraph(entry) {
     await fs.mkdir(ASSET_DIR, { recursive: true });
+    // Their assets are .js holding ESM, which node reads as CommonJS unless the folder says otherwise.
+    await fs.writeFile(path.join(ASSET_DIR, 'package.json'), '{"type":"module"}');
     const fetched = new Set();
     const queue = [entry];
     while (queue.length) {
