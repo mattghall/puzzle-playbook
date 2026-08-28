@@ -1,10 +1,14 @@
 // import $ from 'jquery';
+import '@shared/style/base.css';
 importAll(require.context('../style', false, /\.css$/));
 // import 'bootstrap/dist/css/bootstrap.min.css';
 // import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import feather from 'feather-icons';
-const mainJsVersion = 1.3;
-const apiUrl = 'https://mj3c9f7sje.execute-api.us-west-2.amazonaws.com/default/connections-scraper';
+import { createDragEngine } from '@shared/js/dragdrop.js';
+import { startLoading, endLoading } from '@shared/js/loading.js';
+import { attachDatePicker } from '@shared/js/dates.js';
+import { loadBoard } from '@shared/js/board.js';
+const mainJsVersion = 1.4;
 
 function importAll(r) {
     r.keys().forEach(r);
@@ -26,7 +30,7 @@ function renderGrid() {
         div.draggable = true;
 
         // Attach events to the box
-        attachBoxEvents(div, boxData, boxes, $('#grid'));
+        attachBoxEvents(div, boxData);
 
         $('#grid').append(div);
         adjustFontSize(div);
@@ -50,13 +54,6 @@ export function swapBoxes(el1, el2) {
     boxes[index2] = temp;
 
     renderGrid();
-}
-function startLoading() {
-    $('#loading-overlay').fadeIn('slow');
-}
-
-function endLoading() {
-    $('#loading-overlay').fadeOut('slow');
 }
 
 function shuffleArray(array) {
@@ -211,33 +208,16 @@ $(function () {
         });
     }
 
-    // Function to fetch words from the API
-    async function fetchWords(date = '') {
-        try {
-            const url = date ? `${apiUrl}?date=${date}` : apiUrl;
-            console.log("Fetching " + url);
-            const response = await fetch(url);
-            const data = await response.json();
-
-            // Assuming the API returns an array of words in the response
-            return data;
-        } catch (error) {
-            console.log('Error fetching words:', error);
-            return []; // Return an empty array if the API call fails
-        }
-    }
-
-    // Function to initialize the game
     async function initializeGame(date = '') {
-        var fetchedWords = await fetchWords(date);
-
-        // If fetch fails, use default words and display an error message
-        if (!fetchedWords || fetchedWords.hasOwnProperty("error") || fetchedWords.length === 0) {
-            console.log("Could not fetch data from NYT connections. Using default word list.");
-            fetchedWords = defaultWords; // Fall back to the default words
-        } else {
-            console.log(fetchedWords);
-        }
+        const result = await loadBoard({
+            game: 'connections',
+            date: date,
+            fallback: defaultWords,
+            validate: function (data) {
+                return Array.isArray(data) && data.length > 0 && !data.hasOwnProperty('error');
+            }
+        });
+        const fetchedWords = result.board;
 
         // Convert fetchedWords or defaultWords into the required format for boxes
         const fetchedBoxes = fetchedWords.map((word, index) => ({
@@ -253,12 +233,12 @@ $(function () {
         renderGrid(); // Render the grid
     }
 
-    // Get the current date in yyyy-mm-dd format
-    const currentDate = getCurrentDateFormatted();
-    $('#date-picker').val(currentDate); // Set the date picker's value to today's date
-
     // Initial rendering of the game with today's date
-    initializeGame(currentDate);
+    initializeGame(attachDatePicker('#date-picker', function (picked) {
+        startLoading();
+        console.log('Resetting board for new date ' + picked);
+        initializeGame(picked);
+    }));
 
     // Attach shuffle functionality to the shuffle button
     $('#shuffle-btn').on('click', function () {
@@ -279,16 +259,6 @@ $(function () {
     });
 
     // Automatically fetch and load words when the date picker value changes
-    $('#date-picker').on('change', function () {
-        startLoading();
-        const selectedDate = $('#date-picker').val(); // Use jQuery to get the value
-        if (selectedDate) {
-            console.log("Resetting board for new date " + selectedDate);
-            initializeGame(selectedDate); // Fetch words for the selected date
-        } else {
-            alert("Please select a valid date.");
-        }
-    });
 
     $(".version-span").on("click", function () {
         $(".fileVersions").toggle();
@@ -380,15 +350,6 @@ function lockColor(color) {
     lockedColor[color] = true;
 }
 
-function getCurrentDateFormatted() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0'); // Month is 0-based, so add 1
-    const day = String(today.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-}
-
 const defaultWords = [
     "APPLE", "BANANA", "CHERRY", "ORANGE",
     "RABBIT", "CAT", "FROG", "TURTLE",
@@ -396,131 +357,29 @@ const defaultWords = [
     "MOUSE", "WIRELESS KEYBOARD", "MONITOR", "MIC"
 ];
 
-let draggedElement = null;
-let touchStart = 0;
-
-function handleTouchStart(e) {
-    console.log("Touch start: " + e.target.textContent);
-    e.preventDefault(); // Prevent the default touch behavior (scrolling)
-    draggedElement = e.target; // Store the element being touched
-    $(draggedElement).addClass('dragging');
-    touchStart = e.timeStamp;
-}
-
-function handleTouchMove(e) {
-    console.log("Touch move: " + e.target.textContent);
-    e.preventDefault(); // Prevent scrolling or default behavior
-    const touchLocation = e.touches[0];
-    const targetElement = document.elementFromPoint(touchLocation.clientX, touchLocation.clientY);
-
-    clearOverlapping();
-    if (targetElement && targetElement !== draggedElement) {
-        $(targetElement).addClass('overlapping');
+// Boxes are both the things you drag and the things you drop onto, so a drop swaps the pair.
+const drag = createDragEngine({
+    dragSelector: '.box',
+    dropSelector: '.box',
+    findTarget: function (node) {
+        return node ? $(node).closest('.box').get(0) || null : null;
     }
-}
+});
 
-function handleTouchEnd(e) {
-    console.log("Touch end: " + e.target.textContent);
-    e.preventDefault(); // Prevent the default touch behavior
-    const touchLocation = e.changedTouches[0];
-    const targetElement = document.elementFromPoint(touchLocation.clientX, touchLocation.clientY);
-    if (!targetElement) {
-        cleanupAfterDrag();
-        return;
-    }
-    if (!$(targetElement).hasClass("box")) {
-        console.log("Dragged into no-mans land... ignoring");
-        cleanupAfterDrag();
-        return;
-    }
-    // Swap elements if valid drop target
-    if (targetElement && draggedElement !== targetElement) {
-        swapBoxes(draggedElement, targetElement);
-    } else if (e.timeStamp - touchStart < 300) {
-        console.log("This was a click not a touch");
-        var div = e.target;
-        const boxId = $(div).data('boxId');
-        const boxData = boxes.find(box => box.boxId == boxId);
-        if (!boxData.confirmed) {
+function attachBoxEvents(div, boxData) {
+    const options = {
+        onTap: function () {
+            if (boxData.confirmed) {
+                console.log('Clicked on locked box: ' + div.textContent);
+                return;
+            }
+            console.log('Click: ' + div.textContent);
             toggleBoxColor(div, boxData);
+        },
+        onDrop: function (target, source) {
+            swapBoxes(source, target);
         }
-    } else {
-        console.log("This was an aborted drag");
-    }
-    cleanupAfterDrag();
-
-}
-
-function cleanupAfterDrag() {
-    $(".box").removeClass("dragging overlapping");
-    draggedElement = null; // Clear the dragged element
-}
-
-function handleDragStart(e) {
-    console.log("Drag start: " + e.target.textContent);
-    draggedElement = e.target; // Track the dragged element
-    $(e.target).addClass('dragging');
-}
-
-function handleDragEnd(e) {
-    console.log("Drag end: " + e.target.textContent);
-    $(e.target).removeClass('dragging');
-    clearOverlapping();
-}
-
-function handleDragOver(e) {
-    console.log("Drag over: " + e.target.textContent);
-    e.preventDefault(); // Allow dropping
-    clearOverlapping();
-    if (e.target !== draggedElement) {
-        $(e.target).addClass('overlapping');
-    }
-}
-
-function handleDragLeave(e) {
-    console.log("Drag leave: " + e.target.textContent);
-    e.preventDefault();
-    if (e.target !== draggedElement) {
-        clearOverlapping();
-    }
-}
-
-function handleDrop(e, draggedElement, _grid) {
-    console.log("Drop: " + e.target.textContent);
-    e.preventDefault();
-    const targetElement = e.target;
-    if (draggedElement !== targetElement) {
-        // Swap the boxes based on boxId
-        swapBoxes(draggedElement, targetElement);
-    }
-    clearOverlapping();
-    renderGrid();
-}
-
-function clearOverlapping() {
-    $(".box").removeClass('overlapping');
-
-}
-
-function attachBoxEvents(div, boxData, _grid) {
-    $(div).on('click', function () {
-        if (!boxData.confirmed) {
-            console.log("Click: " + div.textContent);
-            toggleBoxColor(div, boxData, ["white", "yellow", "green", "blue", "purple"]);
-        } else {
-            console.log("Clicked on locked box: " + div.textContent);
-        }
-
-    });
-
-    $(div).on('dragstart', handleDragStart);
-    $(div).on('dragend', handleDragEnd);
-    $(div).on('dragover', handleDragOver);
-    $(div).on('dragleave', handleDragLeave);
-    $(div).on('drop', function (e) {
-        handleDrop(e, draggedElement, _grid); // Handle the drop event
-    });
-    $(div).on('touchstart', handleTouchStart);
-    $(div).on('touchmove', handleTouchMove);
-    $(div).on('touchend', handleTouchEnd);
+    };
+    drag.makeDraggable(div, options);
+    drag.makeDropTarget(div, options);
 }
