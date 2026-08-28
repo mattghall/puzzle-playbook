@@ -4,7 +4,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'dist');
 // Each game builds into its own folder so it can be served from /<game> with a clean URL.
-const games = ['connections'];
+const games = ['connections', 'geozee'];
 
 const gameEntries = {};
 const gameCopies = [];

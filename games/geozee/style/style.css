@@ -1,0 +1,397 @@
+:root {
+  --board-bg-color: #f4f4f4;
+  --slot-bg-color: #ffffff;
+  --slot-border-color: #d6d6d6;
+  --slot-filled-color: #e8f0e4;
+  --country-bg-color: #e3e3e3;
+  --selected-color: #7d9b76;
+  --muted-color: #6b6b6b;
+  --black-color: black;
+}
+
+#style-version-span:after {
+  content: '1.1';
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: var(--board-bg-color);
+  /* Room for the pinned footer */
+  padding-bottom: 110px;
+}
+
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid var(--slot-border-color);
+  border-top-color: var(--selected-color);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* The native date input has a wide intrinsic size, so the column has to be allowed to shrink */
+#buttons-div [class*="col-"] {
+  min-width: 0;
+}
+
+/* One rule for both buttons and the date input, so the three always match */
+#buttons-div .game-btn {
+  height: 48px;
+  padding: 4px 8px;
+  font-size: 1rem;
+}
+
+/* Nine categories, always three across so the board keeps its shape on a phone */
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.slot {
+  background-color: var(--slot-bg-color);
+  border: 1px solid var(--slot-border-color);
+  border-radius: 6px;
+  padding: 8px;
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  user-select: none;
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.slot.filled {
+  background-color: var(--slot-filled-color);
+}
+
+.slot.overlapping {
+  box-shadow: 0 0 15px 5px rgba(0, 0, 255, 0.4);
+}
+
+.slot-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.slot-name {
+  font-weight: bold;
+  font-size: 0.85rem;
+  line-height: 1.1;
+}
+
+.slot-rule {
+  font-size: 0.7rem;
+  color: var(--muted-color);
+  margin-top: 2px;
+}
+
+.slot-drop {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  min-height: 44px;
+}
+
+.queue-label {
+  font-size: 0.85rem;
+  color: var(--muted-color);
+}
+
+.queue {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+}
+
+.flag-slot {
+  border: 2px dashed var(--slot-border-color);
+  border-radius: 6px;
+  padding: 4px;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.3s ease;
+}
+
+.flag-slot.empty {
+  background-color: var(--board-bg-color);
+}
+
+.flag-slot.overlapping {
+  box-shadow: 0 0 15px 5px rgba(0, 0, 255, 0.4);
+}
+
+#queue.overlapping {
+  box-shadow: 0 0 15px 5px rgba(0, 0, 255, 0.4);
+}
+
+.picks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pick-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background-color: var(--slot-bg-color);
+  border: 1px solid var(--slot-border-color);
+  border-radius: 6px;
+  padding: 14px 12px;
+  min-height: 56px;
+  font-size: 0.9rem;
+}
+
+.pick-row .flag {
+  font-size: 1.7rem;
+}
+
+.pick-row.placed {
+  background-color: var(--slot-filled-color);
+}
+
+.pick-country {
+  font-weight: bold;
+}
+
+.pick-sep,
+.pick-category {
+  color: var(--muted-color);
+}
+
+.pick-row.unplaced .pick-category {
+  font-style: italic;
+}
+
+.flag-preview {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.flag-preview-img,
+.flag-preview-fallback {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border: 1px solid var(--slot-border-color);
+  border-radius: 6px;
+  background-color: var(--country-bg-color);
+}
+
+.flag-preview-fallback {
+  font-size: 6rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.flag-preview-name {
+  font-size: 0.9rem;
+  color: var(--muted-color);
+}
+
+.country {
+  background-color: var(--country-bg-color);
+  border: 1px solid var(--slot-border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+  font-size: 0.8rem;
+  text-align: center;
+  word-break: break-word;
+  transition: box-shadow 0.3s ease;
+}
+
+.flag-slot .country {
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 2px;
+  font-size: 0.62rem;
+  line-height: 1.1;
+  hyphens: auto;
+}
+
+.flag-slot .country .flag {
+  font-size: 1.3rem;
+}
+
+.slot-drop .country {
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.country.used {
+  opacity: 0.35;
+  cursor: pointer;
+  filter: grayscale(1);
+  background-color: transparent;
+  border-style: dashed;
+}
+
+.country.selected {
+  border-color: var(--selected-color);
+  border-width: 3px;
+  font-weight: bold;
+}
+
+.country.dragging {
+  opacity: 0.5;
+  box-shadow: 0 0 15px 5px rgba(0, 0, 0, 0.5);
+}
+
+.flag {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+button {
+  font-size: 1rem;
+  padding: 15px;
+  border-radius: 5px;
+  border: none;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 10px;
+}
+
+button:hover {
+  box-shadow: 0 8px 10px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary {
+  background-color: #1897FF;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #006FDC;
+}
+
+.btn-secondary {
+  background-color: #FFB800;
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background-color: #FF9500;
+}
+
+.btn-danger {
+  background-color: #F44336;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background-color: #D32F2F;
+}
+
+/* Bootstrap rows carry negative side margins, which push the footer past the viewport */
+#footer-row {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  background-color: #333;
+  color: white;
+  padding: 5px 0;
+  text-align: center;
+  font-size: 14px;
+  z-index: 10;
+}
+
+.social a {
+  margin: 0 6px;
+  color: #fff;
+}
+
+.social a:hover {
+  color: #FFB800;
+}
+
+@media (max-width: 991.98px) {
+  .mobile-hidden {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #buttons-div .game-btn {
+    height: 44px;
+    padding: 4px;
+    font-size: 0.8rem;
+  }
+
+  .board {
+    gap: 5px;
+  }
+
+  .queue {
+    gap: 3px;
+  }
+
+  .slot {
+    min-height: 110px;
+    padding: 5px;
+  }
+
+  .slot-name {
+    font-size: 0.75rem;
+  }
+
+  .slot-rule {
+    font-size: 0.62rem;
+  }
+
+  .flag-slot {
+    min-height: 54px;
+    padding: 2px;
+  }
+
+  .flag-slot .country {
+    font-size: 0.52rem;
+    padding: 3px 1px;
+  }
+
+  .flag-slot .country .flag {
+    font-size: 1.05rem;
+  }
+
+  .country {
+    font-size: 0.75rem;
+    padding: 5px 7px;
+  }
+}
