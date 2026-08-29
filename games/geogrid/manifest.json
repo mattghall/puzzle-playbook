@@ -1,0 +1,9 @@
+{
+    "name": "Geogrid Helper",
+    "short_name": "Geogrid",
+    "description": "A scratchpad for the daily Geogrid puzzle. Collect the countries that fit each category before you guess.",
+    "start_url": "/index.html",
+    "display": "minimal-ui",
+    "background_color": "#3d3b50",
+    "theme_color": "#8b87c9"
+}

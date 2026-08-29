@@ -5,7 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'dist');
 // Each game builds into its own folder so it can be served from /<game> with a clean URL.
-const games = ['connections', 'geozee'];
+const games = ['connections', 'geozee', 'geogrid'];
 
 const gameEntries = {};
 const gameCopies = [];
