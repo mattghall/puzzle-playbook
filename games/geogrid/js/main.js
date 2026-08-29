@@ -57,6 +57,14 @@ function flagEmoji(code) {
     return String.fromCodePoint(...[...upper].map(ch => 127397 + ch.charCodeAt(0)));
 }
 
+// A board that asks about flags can't have us drawing them, so names carry it instead.
+function flagsAllowed() {
+    return !categoryKeys().some(key => {
+        const category = categoryFor(key);
+        return category && /\bflags?\b/i.test(category.name);
+    });
+}
+
 // Matches how Geogrid itself compares names: strip accents, punctuation and case.
 function searchKey(name) {
     return String(name || '').trim().normalize('NFD')
@@ -174,7 +182,7 @@ function buildChip(key, code) {
     }
     chip.innerHTML = '<span class="chip-flag"></span><span class="chip-name"></span>' +
         '<button type="button" class="chip-remove" aria-label="Remove">&times;</button>';
-    $(chip).find('.chip-flag').text(flagEmoji(code));
+    $(chip).find('.chip-flag').text(flagsAllowed() ? flagEmoji(code) : '');
     $(chip).find('.chip-name').text(countryName(code));
     attachChipEvents(chip);
     return chip;
@@ -200,7 +208,7 @@ function buildResults() {
             row.classList.add('focused');
         }
         row.innerHTML = '<span class="chip-flag"></span><span class="result-name"></span>';
-        $(row).find('.chip-flag').text(flagEmoji(country.code));
+        $(row).find('.chip-flag').text(flagsAllowed() ? flagEmoji(country.code) : '');
         $(row).find('.result-name').text(country.name);
         // Mousedown rather than click, so the input doesn't blur before the pick registers.
         $(row).on('mousedown', function (event) {
@@ -235,6 +243,9 @@ function buildCategory(key) {
     if (!list.length) {
         bubble.classList.add('bubble-empty');
         bubble.textContent = 'Add';
+    } else if (!flagsAllowed()) {
+        bubble.classList.add('bubble-count');
+        bubble.textContent = list.length + (list.length === 1 ? ' country' : ' countries');
     } else {
         list.slice(0, bubbleFlags).forEach((code) => {
             const flag = document.createElement('span');
@@ -332,11 +343,12 @@ function buildSquare(index) {
 function buildApplicable(index, codes) {
     const strip = document.createElement('div');
     strip.className = 'square-auto';
+    const named = !flagsAllowed();
     codes.forEach((code) => {
         const flag = document.createElement('button');
         flag.type = 'button';
-        flag.className = 'auto-flag';
-        flag.textContent = flagEmoji(code);
+        flag.className = named ? 'auto-flag auto-named' : 'auto-flag';
+        flag.textContent = named ? countryName(code) : flagEmoji(code);
         flag.title = countryName(code);
         if (placements[index] === code) {
             flag.classList.add('chosen');
@@ -368,20 +380,23 @@ function buildPlaced(index, code) {
     placed.dataset.index = index;
     placed.draggable = true;
 
-    const img = document.createElement('img');
-    img.className = 'placed-flag';
-    img.alt = countryName(code);
-    // Native handler so jQuery's cleanup on re-render doesn't strip it.
-    img.onerror = function () {
-        $(img).replaceWith('<div class="placed-flag placed-flag-fallback">' + flagEmoji(code) + '</div>');
-    };
-    img.src = 'https://flagcdn.com/' + code + '.svg';
+    if (flagsAllowed()) {
+        const img = document.createElement('img');
+        img.className = 'placed-flag';
+        img.alt = countryName(code);
+        // Native handler so jQuery's cleanup on re-render doesn't strip it.
+        img.onerror = function () {
+            $(img).replaceWith('<div class="placed-flag placed-flag-fallback">' + flagEmoji(code) + '</div>');
+        };
+        img.src = 'https://flagcdn.com/' + code + '.svg';
+        placed.appendChild(img);
+    } else {
+        placed.classList.add('placed-nameonly');
+    }
 
     const name = document.createElement('div');
     name.className = 'placed-name';
     $(name).text(countryName(code));
-
-    placed.appendChild(img);
     placed.appendChild(name);
     attachPlacedEvents(placed);
     return placed;

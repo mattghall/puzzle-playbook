@@ -111,6 +111,11 @@ body {
     font-size: 0.68rem;
 }
 
+.bubble-count {
+    color: var(--gg-muted);
+    font-size: 0.7rem;
+}
+
 .chips {
     display: flex;
     flex-wrap: wrap;
@@ -269,6 +274,19 @@ body {
     opacity: 1;
 }
 
+/* Names need far more room than a glyph, so they get their own pill treatment. */
+.auto-named {
+    background-color: #2f2d3f;
+    border-color: var(--gg-line);
+    color: var(--gg-text);
+    font-size: 0.62rem;
+    padding: 0 4px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .auto-flag.chosen {
     opacity: 1;
     border-color: var(--gg-accent);
@@ -311,6 +329,11 @@ body {
 .placed-flag-fallback {
     font-size: 2rem;
     line-height: 1;
+}
+
+.placed-nameonly .placed-name {
+    font-size: 0.9rem;
+    font-weight: 600;
 }
 
 .placed-name {
