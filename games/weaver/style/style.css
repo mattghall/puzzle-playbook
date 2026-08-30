@@ -1,0 +1,249 @@
+:root {
+    --wv-line: #d3d3d3;
+    --wv-green: #00800080;
+    --wv-yellow: #e9ba3ac3;
+    --wv-orange: #e8823cc3;
+    --wv-red: #e0655bc3;
+    --wv-blue: #1a73e8;
+    --wv-gold: #d4a017;
+    --wv-done: #2e7d32;
+    --skeleton-color: #9aa0a6;
+    --block-size: 60px;
+    --block-gap: 10px;
+    --half-row: calc(var(--block-size) / 2);
+    --quarter-row: calc(var(--block-size) / 4);
+}
+
+body {
+    background-color: #ffffff;
+    color: #000000;
+    /* Room for the pinned footer, which sits over the page */
+    padding-bottom: 120px;
+}
+
+/* A flex column keeps the row margins additive, since collapsing would skew the gap. */
+.ladder {
+    display: flex;
+    flex-direction: column;
+    gap: var(--block-gap);
+    margin-top: 6px;
+}
+
+.ladder-row {
+    display: flex;
+    justify-content: center;
+}
+
+/* The two fixed ends stand apart from the rungs you fill in. */
+.start-row {
+    margin-bottom: var(--block-gap);
+}
+
+.end-row {
+    margin-top: var(--block-gap);
+}
+
+/* The halves stay half a row apart, and the typing row slides around inside that gap. */
+.typing-row {
+    margin-top: var(--quarter-row);
+    margin-bottom: var(--quarter-row);
+}
+
+.typing-row.snap-top {
+    margin-top: 0;
+    margin-bottom: var(--half-row);
+}
+
+.typing-row.snap-bottom {
+    margin-top: var(--half-row);
+    margin-bottom: 0;
+}
+
+/* Help mode already breaks the halves apart with a word list, so drop the padding. */
+.help-mode .typing-row,
+.help-mode .typing-row.snap-top,
+.help-mode .typing-row.snap-bottom {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.entered-row {
+    cursor: pointer;
+}
+
+.block {
+    align-items: center;
+    display: inline-flex;
+    font-size: 2rem;
+    font-weight: 700;
+    height: var(--block-size);
+    width: var(--block-size);
+    justify-content: center;
+    outline: 2px solid var(--wv-line);
+    outline-offset: -2px;
+    text-transform: uppercase;
+    background-color: #ffffff;
+}
+
+.block:not(:last-child) {
+    margin-right: var(--block-gap);
+}
+
+.startWordBlock,
+.endWordBlock {
+    background-color: var(--wv-line);
+    color: #000000;
+}
+
+.endWordBlockComplete {
+    background-color: var(--wv-done);
+    color: #ffffff;
+    outline-color: var(--wv-done);
+}
+
+.greenBlock {
+    background-color: var(--wv-green);
+}
+
+.yellowBlock {
+    background-color: var(--wv-yellow);
+}
+
+.orangeBlock {
+    background-color: var(--wv-orange);
+}
+
+.redBlock {
+    background-color: var(--wv-red);
+}
+
+/* The cell waiting for the next letter, which the game marks with a dark edge. */
+.currentBlock {
+    outline-color: #000000;
+}
+
+/* The single letter this rung moved, so the path reads at a glance. */
+.changedBlock {
+    outline-color: var(--wv-blue);
+}
+
+/* An inset overlay fades over whatever color the block already is, so one keyframe suits every block. */
+.goldWave,
+.goldFillWave {
+    animation: goldWave 0.7s ease-in-out both;
+}
+
+.goldFillWave {
+    animation-name: goldFillWave;
+}
+
+@keyframes goldWave {
+    0%,
+    100% {
+        box-shadow: inset 0 0 0 5px #d4a01700;
+    }
+
+    50%,
+    78% {
+        box-shadow: inset 0 0 0 5px #d4a017ff;
+    }
+}
+
+@keyframes goldFillWave {
+    0% {
+        box-shadow: inset 0 0 0 32px #d4a01700;
+        outline-color: var(--wv-blue);
+    }
+
+    25% {
+        outline-color: var(--wv-gold);
+    }
+
+    50%,
+    100% {
+        box-shadow: inset 0 0 0 32px #d4a017ff;
+        outline-color: var(--wv-gold);
+    }
+}
+
+/* The changed letters keep their gold once the wave has passed, so the blue gives way. */
+.goldFill {
+    background-color: var(--wv-gold);
+    outline-color: var(--wv-gold);
+}
+
+/* Focusable but out of the way, so a phone still raises its keyboard. */
+.typer {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    pointer-events: none;
+}
+
+.status {
+    text-align: center;
+    margin-top: 4px;
+    min-height: 1.5rem;
+    color: #5f6368;
+}
+
+.status-bad {
+    color: #c5221f;
+}
+
+.status-done {
+    color: var(--wv-done);
+    font-weight: 700;
+}
+
+/* Sits under the green completion line, so it reads as a footnote rather than a second result. */
+.optimal-note {
+    color: #5f6368;
+    font-weight: 400;
+    font-size: 0.85rem;
+}
+
+.helper-line {
+    color: #5f6368;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    gap: 4px 10px;
+    justify-content: center;
+    max-width: 500px;
+    text-transform: uppercase;
+}
+
+.helper-word {
+    cursor: pointer;
+}
+
+.helper-word:hover {
+    color: #000000;
+    text-decoration: underline;
+}
+
+@media (max-width: 420px) {
+    :root {
+        --block-size: 52px;
+        --block-gap: 8px;
+    }
+
+    .block {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 360px) {
+    :root {
+        --block-size: 44px;
+        --block-gap: 6px;
+    }
+
+    .block {
+        font-size: 1.4rem;
+    }
+}

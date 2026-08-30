@@ -91,6 +91,27 @@ body > .container {
     position: relative;
 }
 
+.swatch-letter {
+    color: #000000;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 26px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.swatch-tile {
+    background-color: #d3d3d3;
+}
+
+.swatch-rung {
+    background-color: #6aab6a;
+}
+
+.swatch-astray {
+    background-color: #e9ba3a;
+}
+
 .swatch-yellow {
     background-color: #f9df6d;
 }

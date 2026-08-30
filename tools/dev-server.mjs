@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { handler as connectionsBoard } from '../lambda/connections.mjs';
 import { handler as geozeeBoard } from '../lambda/geozee.mjs';
 import { handler as geogridBoard } from '../lambda/geogrid.mjs';
+import { handler as weaverBoard } from '../lambda/weaver.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const PORT = process.env.PORT || 8080;
@@ -14,7 +15,8 @@ const PORT = process.env.PORT || 8080;
 const boards = {
     '/connections/board': connectionsBoard,
     '/geozee/board': geozeeBoard,
-    '/geogrid/board': geogridBoard
+    '/geogrid/board': geogridBoard,
+    '/weaver/board': weaverBoard
 };
 
 const types = {
