@@ -46,7 +46,7 @@ jobs:
 
       - name: Deploy the board Lambdas
         run: |
-          for game in connections geozee geogrid; do
+          for game in connections geozee geogrid weaver; do
             rm -rf build-lambda && mkdir build-lambda
             cp "lambda/$game.mjs" build-lambda/index.mjs
             (cd build-lambda && zip -q -r ../board-lambda.zip index.mjs)
