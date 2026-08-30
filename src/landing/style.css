@@ -75,6 +75,20 @@ body > .container {
     font-size: 22px;
     line-height: 26px;
     text-align: center;
+    position: relative;
+}
+
+/* A white silhouette behind the glyph; chained drop-shadows compound into blobs. */
+.swatch-flag::before {
+    content: attr(data-emoji);
+    position: absolute;
+    inset: 0;
+    filter: brightness(0) invert(1);
+    transform: scale(1.11);
+}
+
+.swatch-flag span {
+    position: relative;
 }
 
 .swatch-yellow {
@@ -91,6 +105,27 @@ body > .container {
 
 .swatch-purple {
     background-color: #ba81c5;
+}
+
+.swatch-red {
+    background-color: #d97b6c;
+}
+
+/* The GEOGRID_TIERS colors from the games repo, rarest first. */
+.swatch-mythical {
+    background-color: #532274;
+}
+
+.swatch-legendary {
+    background-color: #4d9ed7;
+}
+
+.swatch-epic {
+    background-color: #cf76c1;
+}
+
+.swatch-rare {
+    background-color: #9072d7;
 }
 
 /* Sits with the footer bar at the bottom rather than trailing the cards */
