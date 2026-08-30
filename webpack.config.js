@@ -1,11 +1,26 @@
 const path = require('path');
+const fs = require('fs');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const dist = path.resolve(__dirname, 'dist');
 // Each game builds into its own folder so it can be served from /<game> with a clean URL.
-const games = ['connections', 'geozee', 'geogrid', 'weaver'];
+// The only part of the footer that differs per game is the link out to the real puzzle.
+const playLinks = {
+    connections: { name: 'Connections', url: 'https://www.nytimes.com/games/connections' },
+    geozee: { name: 'Geozee', url: 'https://geozee.earth' },
+    geogrid: { name: 'Geogrid', url: 'https://www.geogridgame.com' },
+    weaver: { name: 'Weaver', url: 'https://wordwormdormdork.com/weaver/' }
+};
+const games = Object.keys(playLinks);
+
+const footerTemplate = fs.readFileSync(path.resolve(__dirname, 'shared/html/footer.html'), 'utf8').trimEnd();
+
+function renderFooter(game) {
+    const link = playLinks[game];
+    return footerTemplate.replace('{{playUrl}}', link.url).replace('{{playName}}', link.name);
+}
 
 const gameEntries = {};
 const gameCopies = [];
@@ -20,6 +35,7 @@ games.forEach((game) => {
         inject: 'head',
         scriptLoading: 'blocking',
         minify: false,
+        templateParameters: { footer: renderFooter(game) },
     }));
     gameCopies.push({ from: 'games/' + game + '/manifest.json', to: path.join(dist, game, 'manifest.json'), noErrorOnMissing: true });
     gameCopies.push({ from: 'games/' + game + '/js/service-worker.js', to: path.join(dist, game, 'service-worker.js'), noErrorOnMissing: true });
