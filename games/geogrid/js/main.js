@@ -429,6 +429,7 @@ const skeletonRing = [0, 1, 2, 5, 8, 7, 6, 3];
 function renderSkeleton() {
     $('#grid').empty();
     $('#editor').empty();
+    $('#flag-note').hide();
     const badge = document.createElement('div');
     badge.className = 'badge-cell skeleton';
     $('#grid').append(badge);
@@ -460,6 +461,7 @@ function renderSkeleton() {
 function renderAll() {
     renderGrid();
     fitCategoryNames();
+    $('#flag-note').toggle(!flagsAllowed());
     renderEditor();
     feather.replace();
     if (activeKey) {

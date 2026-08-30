@@ -386,6 +386,14 @@ body {
     justify-content: flex-start;
 }
 
+.flag-note {
+    color: var(--gg-muted);
+    font-size: 0.75rem;
+    text-align: center;
+    margin-top: 8px;
+    opacity: 0.8;
+}
+
 .hint {
     color: var(--gg-muted);
     font-size: 0.8rem;
