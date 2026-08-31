@@ -7,7 +7,10 @@ on:
 
 concurrency:
   group: deploy-playbook
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -30,6 +33,27 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
+
+      # The Version workflow moves this on every push to main, so a matching number means
+      # the release branch is carrying something that already shipped.
+      - name: Check the version was bumped
+        run: |
+          version=`sh tools/site-version.sh`
+          live=`aws s3 cp s3://${{ secrets.SITE_BUCKET }}/index.html - 2>/dev/null \
+            | sh tools/site-version.sh -`
+          if [ -z "$version" ]; then
+            echo "No version-span found in shared/html/footer.html."
+            exit 1
+          fi
+          if [ -z "$live" ]; then
+            echo "Nothing live to compare against, releasing $version."
+            exit 0
+          fi
+          if [ "$version" = "$live" ]; then
+            echo "Version $version is already what is live. Push to main first so the Version workflow can bump it."
+            exit 1
+          fi
+          echo "Releasing $live -> $version."
 
       # Hashed bundles cache forever, but the pages pointing at them can't or a release 404s.
       - name: Sync to S3
@@ -62,3 +86,17 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
             --paths "/*" --no-cli-pager > /dev/null
+
+      - name: Tag the release
+        run: |
+          # Last, so that a tag only ever exists for a release that actually shipped.
+          version=`sh tools/site-version.sh`
+          if [ -n "`git ls-remote --tags origin refs/tags/$version`" ]; then
+            echo "$version is already tagged, leaving it alone."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$version" -m "Release $version"
+          git push origin "$version"
+          echo "Tagged $version."

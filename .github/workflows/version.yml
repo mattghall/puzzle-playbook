@@ -1,0 +1,56 @@
+name: Version
+
+# Bumps the version in the footer on every push to main.
+#
+# Doing it here rather than in a pre-commit hook means it runs whichever machine the work
+# came from, and whether main was pushed to directly or merged into from a pull request.
+# Commits on a feature branch no longer move the number: one push to main is one version.
+#
+# This cannot loop. A push made with GITHUB_TOKEN does not start another workflow run.
+#
+# The bump commit deliberately does not say [skip ci]. It ends up as the tip of main, and a
+# release is that tip pushed to the release branch, so marking it would make GitHub skip the
+# Deploy run and the release would silently do nothing.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Bump the site version
+    runs-on: ubuntu-latest
+    steps:
+      # The tip of main rather than the commit that was pushed, so that two pushes landing
+      # close together cannot bump from the same starting point and collide on the push back.
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Bump the version
+        id: bump
+        run: |
+          was=`sh tools/site-version.sh`
+          now=`sh tools/bump-version.sh`
+          echo "Version $was -> $now."
+          echo "version=$now" >> "$GITHUB_OUTPUT"
+
+      - name: Commit it back to main
+        run: |
+          if git diff --quiet; then
+            echo "Nothing changed, leaving main alone."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add shared/html/footer.html src/landing/index.html
+          git commit -m "Bump the version to ${{ steps.bump.outputs.version }}"
+          git push origin HEAD:main
