@@ -295,10 +295,7 @@ function render() {
     ladder.appendChild(wordRow(board.endWord, ['end-row'], endWordClasses));
 
     renderStatus();
-    if (typing) {
-        positionTyper(typing);
-        keepTypingRowVisible();
-    }
+    if (typing) positionTyper(typing);
 
     if (!solved()) {
         celebrated = false;
@@ -412,8 +409,8 @@ function positionTyper(row) {
     if (typer) typer.style.top = row.offsetTop + 'px';
 }
 
-// A phone keyboard covers the bottom of the screen and the pinned footer covers more, so aim above both.
-function keepTypingRowVisible() {
+// A phone keyboard covers the bottom of the screen and the pinned footer covers more, so center between them.
+function centerTypingRow() {
     const row = document.querySelector('.typing-row');
     if (!row) return;
     const view = window.visualViewport;
@@ -422,7 +419,6 @@ function keepTypingRowVisible() {
     const bottom = top + (view ? view.height : window.innerHeight) - (footer ? footer.offsetHeight : 0);
     if (bottom <= top) return;
     const box = row.getBoundingClientRect();
-    if (box.top >= top && box.bottom <= bottom) return;
     window.scrollBy({ top: box.top + box.height / 2 - (top + bottom) / 2 });
 }
 
@@ -430,7 +426,7 @@ function focusTyper() {
     const typer = document.getElementById('typer');
     if (!typer) return;
     typer.focus({ preventScroll: true });
-    keepTypingRowVisible();
+    centerTypingRow();
 }
 
 function renderSkeleton() {
@@ -457,19 +453,21 @@ function attachTyping() {
         typer.value = clean;
         typed = clean;
         render();
+        centerTypingRow();
     });
     typer.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
             commit();
             typer.value = typed;
+            centerTypingRow();
         }
     });
     // Tapping anywhere on the ladder should bring up a keyboard on a phone.
     document.getElementById('ladder').addEventListener('click', focusTyper);
     // The keyboard opening resizes the visual viewport rather than firing a scroll event.
     if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', keepTypingRowVisible);
+        window.visualViewport.addEventListener('resize', centerTypingRow);
     }
 }
 
