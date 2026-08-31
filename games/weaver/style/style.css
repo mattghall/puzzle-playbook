@@ -27,6 +27,7 @@ body {
     flex-direction: column;
     gap: var(--block-gap);
     margin-top: 6px;
+    position: relative;
 }
 
 .ladder-row {
@@ -67,8 +68,27 @@ body {
     margin-bottom: 0;
 }
 
-.entered-row {
+/* The gutter balances the × so the word itself stays centered on the page. */
+.rung-gutter,
+.rung-remove {
+    flex: none;
+    width: var(--half-row);
+    align-self: center;
+}
+
+.rung-remove {
+    background: none;
+    border: 0;
+    color: #9aa0a6;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0;
     cursor: pointer;
+}
+
+.rung-remove:hover,
+.rung-remove:focus {
+    color: #c5221f;
 }
 
 .block {
@@ -173,8 +193,11 @@ body {
 }
 
 /* Focusable but out of the way, so a phone still raises its keyboard. */
+/* Parked on the typing row so the browser scrolls there, not to the end of the page. */
 .typer {
     position: absolute;
+    top: 0;
+    left: 50%;
     opacity: 0;
     width: 1px;
     height: 1px;

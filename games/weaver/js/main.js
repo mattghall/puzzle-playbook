@@ -174,6 +174,13 @@ function rungClasses(word, index, source) {
     return classes;
 }
 
+// Wiping innerHTML would take the typing input with it, so only the rows come out.
+function clearLadder(ladder) {
+    Array.from(ladder.children).forEach((child) => {
+        if (child.id !== 'typer') child.remove();
+    });
+}
+
 function rowEl(classes) {
     const row = document.createElement('div');
     row.className = ['ladder-row'].concat(classes || []).join(' ');
@@ -233,9 +240,32 @@ function typingRow() {
     return row;
 }
 
+// The × sits outside the blocks, so a matching gutter on the left keeps the word centered.
+function removeButton(onRemove) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'rung-remove';
+    button.textContent = '\u00d7';
+    button.title = 'Remove this rung';
+    button.setAttribute('aria-label', 'Remove this rung');
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        onRemove();
+    });
+    return button;
+}
+
+function withRemove(row, onRemove) {
+    const gutter = document.createElement('div');
+    gutter.className = 'rung-gutter';
+    row.insertBefore(gutter, row.firstChild);
+    row.appendChild(removeButton(onRemove));
+    return row;
+}
+
 function render() {
     const ladder = document.getElementById('ladder');
-    ladder.innerHTML = '';
+    clearLadder(ladder);
     ladder.classList.toggle('help-mode', helpMode);
     reachable = buildReachable();
 
@@ -244,14 +274,14 @@ function render() {
     topChain.forEach((word, index) => {
         const above = index ? topChain[index - 1] : board.startWord;
         const row = wordRow(word, ['entered-row'], (i) => rungClasses(word, i, above));
-        row.title = 'Remove this rung';
-        row.addEventListener('click', () => removeFromTop(index));
-        ladder.appendChild(row);
+        ladder.appendChild(withRemove(row, () => removeFromTop(index)));
     });
 
+    let typing = null;
     if (!solved()) {
         appendHelper(ladder, topWord());
-        ladder.appendChild(typingRow());
+        typing = typingRow();
+        ladder.appendChild(typing);
         appendHelper(ladder, bottomWord());
     }
 
@@ -259,14 +289,16 @@ function render() {
         // A bottom rung was played off the word below it, so that's what it changed.
         const below = index + 1 < bottomChain.length ? bottomChain[index + 1] : board.endWord;
         const row = wordRow(word, ['entered-row'], (i) => rungClasses(word, i, below));
-        row.title = 'Remove this rung';
-        row.addEventListener('click', () => removeFromBottom(index));
-        ladder.appendChild(row);
+        ladder.appendChild(withRemove(row, () => removeFromBottom(index)));
     });
 
     ladder.appendChild(wordRow(board.endWord, ['end-row'], endWordClasses));
 
     renderStatus();
+    if (typing) {
+        positionTyper(typing);
+        keepTypingRowVisible();
+    }
 
     if (!solved()) {
         celebrated = false;
@@ -374,14 +406,36 @@ function renderStatus() {
     status.textContent = distance(topWord(), bottomWord()) + ' letters between the two ends';
 }
 
+// The input rides along with the typing row, so focusing it can't scroll the ladder away.
+function positionTyper(row) {
+    const typer = document.getElementById('typer');
+    if (typer) typer.style.top = row.offsetTop + 'px';
+}
+
+// A phone keyboard covers the bottom of the screen and the pinned footer covers more, so aim above both.
+function keepTypingRowVisible() {
+    const row = document.querySelector('.typing-row');
+    if (!row) return;
+    const view = window.visualViewport;
+    const top = view ? view.offsetTop : 0;
+    const footer = document.getElementById('footer-row');
+    const bottom = top + (view ? view.height : window.innerHeight) - (footer ? footer.offsetHeight : 0);
+    if (bottom <= top) return;
+    const box = row.getBoundingClientRect();
+    if (box.top >= top && box.bottom <= bottom) return;
+    window.scrollBy({ top: box.top + box.height / 2 - (top + bottom) / 2 });
+}
+
 function focusTyper() {
     const typer = document.getElementById('typer');
-    if (typer) typer.focus();
+    if (!typer) return;
+    typer.focus({ preventScroll: true });
+    keepTypingRowVisible();
 }
 
 function renderSkeleton() {
     const ladder = document.getElementById('ladder');
-    ladder.innerHTML = '';
+    clearLadder(ladder);
     const blocks = [];
     for (let r = 0; r < 5; r++) {
         const row = rowEl(['entered-row']);
@@ -413,6 +467,10 @@ function attachTyping() {
     });
     // Tapping anywhere on the ladder should bring up a keyboard on a phone.
     document.getElementById('ladder').addEventListener('click', focusTyper);
+    // The keyboard opening resizes the visual viewport rather than firing a scroll event.
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', keepTypingRowVisible);
+    }
 }
 
 async function load(date) {
