@@ -32,7 +32,7 @@
 </head>
 
 <body>
-    <div class="container-fluid">
+    <div class="container">
         <ul class="nav nav-tabs" id="helper-tabs" role="tablist">
             <li class="nav-item">
                 <a class="nav-link active" id="wordle-tab" href="#wordle-pane" role="tab">Wordle</a>
@@ -44,81 +44,89 @@
 
         <div class="tab-content">
             <div class="tab-pane fade show active" id="wordle-pane" role="tabpanel">
-                <div id="guesses" class="wordle-row">
-                    <table border="3">
-                        <tbody>
-                            <tr class="guess">
-                                <td><input id="g0" maxlength="1" class="l-box" type="text"></td>
-                                <td><input id="g1" maxlength="1" class="l-box" type="text"></td>
-                                <td><input id="g2" maxlength="1" class="l-box" type="text"></td>
-                                <td><input id="g3" maxlength="1" class="l-box" type="text"></td>
-                                <td><input id="g4" maxlength="1" class="l-box" type="text"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <div class="input-panel">
+                    <div id="guesses" class="wordle-row">
+                        <table border="3">
+                            <tbody>
+                                <tr class="guess">
+                                    <td><input id="g0" maxlength="1" class="l-box" type="text"></td>
+                                    <td><input id="g1" maxlength="1" class="l-box" type="text"></td>
+                                    <td><input id="g2" maxlength="1" class="l-box" type="text"></td>
+                                    <td><input id="g3" maxlength="1" class="l-box" type="text"></td>
+                                    <td><input id="g4" maxlength="1" class="l-box" type="text"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <!-- Green letters, in the spot the game put them -->
-                <div class="wordle-row bg-success">
-                    <table border="3">
-                        <tbody>
-                            <tr class="winners">
-                                <td><input id="w0" placeholder=" " class="l-box" type="text"></td>
-                                <td><input id="w1" placeholder=" " class="l-box" type="text"></td>
-                                <td><input id="w2" placeholder=" " class="l-box" type="text"></td>
-                                <td><input id="w3" placeholder=" " class="l-box" type="text"></td>
-                                <td><input id="w4" placeholder=" " class="l-box" type="text"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                    <!-- Green letters, in the spot the game put them -->
+                    <div class="wordle-row bg-success">
+                        <table border="3">
+                            <tbody>
+                                <tr class="winners">
+                                    <td><input id="w0" placeholder=" " class="l-box" type="text"></td>
+                                    <td><input id="w1" placeholder=" " class="l-box" type="text"></td>
+                                    <td><input id="w2" placeholder=" " class="l-box" type="text"></td>
+                                    <td><input id="w3" placeholder=" " class="l-box" type="text"></td>
+                                    <td><input id="w4" placeholder=" " class="l-box" type="text"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <!-- Yellow letters, in a spot they are known not to be -->
-                <div class="wordle-row bg-warning help-only" hidden>
-                    <table border="3">
-                        <tbody>
-                            <tr class="cigars">
-                                <td><input id="c0" placeholder=" " class="l-box" type="text"></td>
-                                <td><input id="c1" placeholder=" " class="l-box" type="text"></td>
-                                <td><input id="c2" placeholder=" " class="l-box" type="text"></td>
-                                <td><input id="c3" placeholder=" " class="l-box" type="text"></td>
-                                <td><input id="c4" placeholder=" " class="l-box" type="text"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                    <!-- Yellow letters, in a spot they are known not to be -->
+                    <div class="wordle-row bg-warning help-only" hidden>
+                        <table border="3">
+                            <tbody>
+                                <tr class="cigars">
+                                    <td><input id="c0" placeholder=" " class="l-box" type="text"></td>
+                                    <td><input id="c1" placeholder=" " class="l-box" type="text"></td>
+                                    <td><input id="c2" placeholder=" " class="l-box" type="text"></td>
+                                    <td><input id="c3" placeholder=" " class="l-box" type="text"></td>
+                                    <td><input id="c4" placeholder=" " class="l-box" type="text"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <!-- Letters ruled out entirely. Typing one in the first box files it away. -->
-                <div id="graveyard" class="wordle-row bg-danger help-only" hidden>
-                    <table border="3">
-                        <colgroup><col span="5"></colgroup>
-                        <tbody>
-                            <tr class="graveyard0">
-                                <td><input placeholder=" " class="l-box" type="text"></td>
-                            </tr>
-                            <tr class="graveyard1"></tr>
-                            <tr class="graveyard2"></tr>
-                            <tr class="graveyard3"></tr>
-                            <tr class="graveyard4"></tr>
-                            <tr class="graveyard5"></tr>
-                        </tbody>
-                    </table>
-                </div>
+                    <!-- Letters ruled out entirely. Typing one in the first box files it away. -->
+                    <div id="graveyard" class="wordle-row bg-danger help-only" hidden>
+                        <table border="3">
+                            <colgroup><col span="5"></colgroup>
+                            <tbody>
+                                <tr class="graveyard0">
+                                    <td><input placeholder=" " class="l-box" type="text"></td>
+                                </tr>
+                                <tr class="graveyard1"></tr>
+                                <tr class="graveyard2"></tr>
+                                <tr class="graveyard3"></tr>
+                                <tr class="graveyard4"></tr>
+                                <tr class="graveyard5"></tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <p class="strong-bank" style="padding-left: 15px;"></p>
-                <p class="bank" style="padding-left: 15px;"></p>
+                </div>
+                <div class="word-panel">
+                    <p class="strong-bank" style="padding-left: 15px;"></p>
+                    <p class="bank" style="padding-left: 15px;"></p>
+                </div>
             </div>
 
             <div class="tab-pane fade" id="word500-pane" role="tabpanel">
-                <div id="w5-board"></div>
-                <div style="padding: 6px 15px;">
-                    <label>
-                        <input type="checkbox" id="w5-hard-mode"> Hard mode
-                    </label>
-                    <span class="w5-count" style="padding-left: 15px;"></span>
+                <div class="input-panel">
+                    <div id="w5-board"></div>
+                    <div style="padding: 6px 15px;">
+                        <label>
+                            <input type="checkbox" id="w5-hard-mode"> Hard mode
+                        </label>
+                        <span class="w5-count" style="padding-left: 15px;"></span>
+                    </div>
                 </div>
-                <p class="strong-bank w5-strong-bank" style="padding-left: 15px;"></p>
-                <p class="w5-bank" style="padding-left: 15px;"></p>
+                <div class="word-panel">
+                    <p class="strong-bank w5-strong-bank" style="padding-left: 15px;"></p>
+                    <p class="w5-bank" style="padding-left: 15px;"></p>
+                </div>
             </div>
         </div>
     </div>
