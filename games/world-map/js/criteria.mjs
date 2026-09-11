@@ -468,4 +468,12 @@ export function createCriteriaControls(atlas, onChange) {
         focusFilters();
     });
     updateChoices();
+    return {
+        setSelection(conditions, matchMode) {
+            selected.clear();
+            for (const { key, exclude } of conditions) selected.set(key, exclude);
+            mode.value = matchMode;
+            update();
+        },
+    };
 }

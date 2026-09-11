@@ -100,7 +100,9 @@ export async function buildImageAtlas(countries, imageSet, onProgress) {
     const context = canvas.getContext("2d", { willReadFrequently: true });
     const projection = geoEquirectangular().scale(ATLAS_WIDTH / (2 * Math.PI)).translate([ATLAS_WIDTH / 2, ATLAS_HEIGHT / 2]);
     const path = geoPath(projection, context);
+    const total = countries.filter(country => imageSet.images[getCountryId(country)]).length;
     let loaded = 0;
+    onProgress(loaded, total);
     for (const country of countries) {
         const entry = imageSet.images[getCountryId(country)];
         if (!entry) continue;
@@ -133,9 +135,9 @@ export async function buildImageAtlas(countries, imageSet, onProgress) {
             context.restore();
         });
         loaded++;
+        onProgress(loaded, total);
         if (loaded % 20 === 0) {
-            onProgress(loaded);
-            await new Promise(resolve => requestAnimationFrame(resolve));
+            await new Promise(resolve => setTimeout(resolve, 0));
         }
     }
     return context.getImageData(0, 0, ATLAS_WIDTH, ATLAS_HEIGHT);

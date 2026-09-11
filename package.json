@@ -8,7 +8,7 @@
     "build": "webpack --config webpack.config.js",
     "watch": "webpack --watch",
     "world-map:update": "node tools/world-map/update.mjs",
-    "world-map:check": "node tools/world-map.test.mjs && node --test tools/world-map/update.test.mjs tools/world-map-atlas.test.mjs tools/world-map-callouts.test.mjs tools/world-map-controls.test.mjs tools/world-map-numeric.test.mjs tools/geogrid-atlas/*.test.mjs",
+    "world-map:check": "node tools/world-map.test.mjs && node --test tools/world-map/update.test.mjs tools/world-map-atlas.test.mjs tools/world-map-callouts.test.mjs tools/world-map-controls.test.mjs tools/world-map-numeric.test.mjs tools/world-map-loading.test.mjs tools/world-map-settings.test.mjs tools/geogrid-atlas/*.test.mjs",
     "clean": "rm -rf dist"
   },
   "keywords": [],

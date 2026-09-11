@@ -404,23 +404,23 @@ test("CLI refresh rejects untracked and ignored snapshots before preparing", asy
     }
 });
 
-test("atlas refresh protects both snapshots before any downloads", async () => {
+for (const scope of ["atlas", "capitals"]) test(scope + " refresh protects both snapshots before any downloads", async () => {
     const originals = { [GEOGRID_PATH]: "atlas fixture", [GEOGRID_SOURCES_PATH]: "source fixture" };
-    const { root } = await createFixture("atlas-protection", originals, false);
+    const { root } = await createFixture(scope + "-protection", originals, false);
     try {
-        assert.deepEqual(parseArguments(["--scope", "atlas"]), { scope: "atlas" });
-        assert.throws(() => parseArguments(["--scope", "atlas", "--country", "USA"]), /all countries/);
-        await assert.rejects(update({ root, scope: "atlas", country: "USA" }), /all countries/);
-        await assert.rejects(update({ root, scope: "atlas" }), /local edits/);
+        assert.deepEqual(parseArguments(["--scope", scope]), { scope });
+        assert.throws(() => parseArguments(["--scope", scope, "--country", "USA"]), /all countries/);
+        await assert.rejects(update({ root, scope, country: "USA" }), /all countries/);
+        await assert.rejects(update({ root, scope }), /local edits/);
         await writeFile(path.join(root, ".gitignore"), "games/world-map/data/\n");
-        await assert.rejects(update({ root, scope: "atlas" }), /local edits/);
+        await assert.rejects(update({ root, scope }), /local edits/);
         await rm(path.join(root, ".gitignore"));
         commitFixture(root, Object.keys(originals));
         for (const [file, content] of Object.entries(originals)) {
             await writeFile(path.join(root, file), "local edit");
-            await assert.rejects(update({ root, scope: "atlas" }), /local edits/);
+            await assert.rejects(update({ root, scope }), /local edits/);
             execFileSync("git", ["-C", root, "add", "--", file]);
-            await assert.rejects(update({ root, scope: "atlas" }), /local edits/);
+            await assert.rejects(update({ root, scope }), /local edits/);
             assert.equal(await readFile(path.join(root, file), "utf8"), "local edit");
             await writeFile(path.join(root, file), content);
             execFileSync("git", ["-C", root, "add", "--", file]);

@@ -55,7 +55,7 @@ test("every numeric family has both strict bounds and exact values without chang
                 assert.ok(choice.matches instanceof Set && choice.unknown instanceof Set);
                 assert.ok([...choice.matches].every(code => !choice.unknown.has(code)));
                 assert.equal(choice.sources[0].derived, true);
-                assert.equal(choice.sources[0].url, SNAPSHOT.source.url);
+                assert.equal(choice.sources[0].url, range.sourceIds.includes("capital_population_over_x") ? SNAPSHOT.source.capitals.url : SNAPSHOT.source.url);
                 assert.ok(choice.id && Number.isInteger(choice.variantId) && choice.label && choice.section && choice.category);
             }
         }
@@ -92,10 +92,11 @@ test("all derived country results agree with numeric facts, not opposite predica
                 assert.equal(query(null), "outside");
                 for (const [code, country] of Object.entries(SNAPSHOT.countries)) {
                     const value = country.numericValues[metric.key];
+                    const values = Array.isArray(value) ? value : [value];
                     const coastal = metric.key === "coastline_length";
-                    const unknown = !(coastal && country.landlocked === true) && (value === null || coastal && country.landlocked === null);
-                    const matches = !unknown && !(coastal && country.landlocked === true) &&
-                        (side === "lower" ? value > choice.value : side === "upper" ? value < choice.value : value === choice.value);
+                    const positive = values.some(actual => actual !== null && (side === "lower" ? actual > choice.value : side === "upper" ? actual < choice.value : actual === choice.value));
+                    const unknown = !(coastal && country.landlocked === true) && (!positive && values.includes(null) || coastal && country.landlocked === null);
+                    const matches = !unknown && !(coastal && country.landlocked === true) && positive;
                     assert.equal(query(code), unknown ? "unknown" : matches ? "match" : "nonmatch", choice.key + "/" + code);
                     assert.equal(inverted(code), unknown ? "unknown" : matches ? "nonmatch" : "match");
                 }
@@ -147,16 +148,26 @@ test("border counts include every observed integer, and flag counts use reviewed
     assert.ok(temperature.values[0] < 0);
 });
 
-test("capital numeric facts stay unavailable, and coastline retains its source guard", () => {
+test("capital ranges preserve multiple populations and missing values, and coastline retains its source guard", () => {
     const capital = getRange("capital_population_over_x");
+    assert.deepEqual(SNAPSHOT.countries.my.numericValues.capital_population, [2075600, 119700]);
+    assert.ok(getChoiceAtValue(capital, "lower", 2000000).matches.has("my"));
+    assert.ok(getChoiceAtValue(capital, "upper", 200000).matches.has("my"));
     for (const side of ["lower", "upper", "exact"]) {
         for (const choice of capital[side].choices) {
-            assert.equal(choice.unknown.size, 249);
-            assert.equal(choice.matches.size, 0);
-            assert.match(choice.unavailableReason, /combined.json doesn't contain/);
+            assert.ok(choice.unknown.has("gs"));
+            assert.ok(choice.unknown.has("aq"));
+            assert.equal(choice.unavailableReason, undefined);
+            assert.equal(choice.sources[0].url, SNAPSHOT.source.capitals.url);
         }
     }
     const input = createFixture();
+    input.countries.aa.numericValues.capital_population = [50000, 200000];
+    input.countries.bb.numericValues.capital_population = [1000, null];
+    const fixtureCapital = getRange("capital_population_over_x", createAtlas(input, []));
+    assert.deepEqual([...getChoiceAtValue(fixtureCapital, "exact", 50000).matches], ["aa"]);
+    assert.deepEqual([...getChoiceAtValue(fixtureCapital, "exact", 50000).unknown], ["bb", "cc"]);
+    assert.deepEqual([...getChoiceAtValue(fixtureCapital, "upper", 50000).matches], ["bb"]);
     input.countries.aa.landlocked = true;
     input.countries.bb.landlocked = null;
     const coast = getRange("coastline_length_over_x", createAtlas(input, []));
@@ -185,6 +196,10 @@ test("numeric and time-zone schemas reject malformed extensions while legacy fix
         input => input.countries.aa.numericValues.hdi = 1.1,
         input => input.countries.aa.numericValues.arable_land = 101,
         input => input.countries.aa.numericValues.capital_population = 10,
+        input => input.countries.aa.numericValues.capital_population = [],
+        input => input.countries.aa.numericValues.capital_population = [-1],
+        input => input.countries.aa.numericValues.capital_population = [1.5],
+        input => input.countries.aa.numericValues.capital_population = ["100"],
         input => delete input.countries.aa.numericValues.rainfall,
         input => delete input.countries.aa.numericValues,
         input => input.countries.aa.numericValues = [],

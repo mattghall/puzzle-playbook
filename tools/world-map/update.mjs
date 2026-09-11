@@ -4,10 +4,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateImagePath } from "../../games/world-map/js/model.mjs";
 import { FACTS_PATH, prepareFacts, SOURCES_PATH } from "./facts.mjs";
-import { GEOGRID_PATH, GEOGRID_SOURCES_PATH, prepareAtlas } from "../geogrid-atlas/prepare.mjs";
+import { GEOGRID_PATH, GEOGRID_SOURCES_PATH, prepareAtlas, prepareCapitals } from "../geogrid-atlas/prepare.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const SCOPES = ["facts", "cities", "images", "atlas"];
+const SCOPES = ["facts", "cities", "images", "atlas", "capitals"];
 
 export function parseArguments(args) {
     const result = {};
@@ -15,13 +15,13 @@ export function parseArguments(args) {
         const key = args[i];
         const value = args[i + 1];
         if (!["--scope", "--country"].includes(key) || !value || value.startsWith("--") || result[key.slice(2)]) {
-            throw new Error("Usage: node tools/world-map/update.mjs --scope facts|cities|images|atlas [--country ISO_A3]");
+            throw new Error("Usage: node tools/world-map/update.mjs --scope facts|cities|images|atlas|capitals [--country ISO_A3]");
         }
         result[key.slice(2)] = value;
     }
     if (!SCOPES.includes(result.scope)) throw new Error("--scope must be " + SCOPES.join(", "));
     if (result.country && !/^(?:[A-Z]{3}|X-[A-Z-]+)$/.test(result.country)) throw new Error("Invalid country ID");
-    if (result.scope === "atlas" && result.country) throw new Error("Atlas refreshes all countries together");
+    if (["atlas", "capitals"].includes(result.scope) && result.country) throw new Error("Atlas and capital refreshes update all countries together");
     return result;
 }
 
@@ -161,19 +161,21 @@ export async function applyTransaction(root, directory, files, { baseline, befor
 
 export async function update({ root = ROOT, scope, country, bootstrap = false }) {
     if (!SCOPES.includes(scope)) throw new Error("Invalid update scope");
-    if (scope === "atlas" && country) throw new Error("Atlas refreshes all countries together");
+    if (["atlas", "capitals"].includes(scope) && country) throw new Error("Atlas and capital refreshes update all countries together");
     if (bootstrap && (scope !== "facts" || country)) throw new Error("Bootstrap prepares all facts and cities together");
     const directory = path.join(root, ".world-map-stage-" + process.pid);
     await mkdir(directory);
     let preserveStage = false;
     try {
-        const targets = scope === "atlas" ? [GEOGRID_PATH, GEOGRID_SOURCES_PATH] : [FACTS_PATH, SOURCES_PATH];
+        const targets = ["atlas", "capitals"].includes(scope) ? [GEOGRID_PATH, GEOGRID_SOURCES_PATH] : [FACTS_PATH, SOURCES_PATH];
         const baseline = scope === "images" ? await captureImageTargets(root) : await captureTargets(root, targets);
         if (bootstrap && baseline.files.size) throw new Error("Bootstrap requires absent target snapshots; existing files won't be overwritten");
         assertClean(root, baseline.targets);
         let result;
         if (scope === "atlas") {
             result = await prepareAtlas({ root, directory });
+        } else if (scope === "capitals") {
+            result = await prepareCapitals({ root, directory });
         } else if (scope === "images") {
             const { refreshImages } = await import("../world-map-images.mjs");
             const images = await refreshImages({ root, stagingDir: directory, countryIds: country ? [country] : [] });

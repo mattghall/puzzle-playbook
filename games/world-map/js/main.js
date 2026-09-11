@@ -7,6 +7,7 @@ import { createCalloutLayer } from "./callout-layer.mjs";
 import { createMap } from "./map.mjs";
 import { buildImageAtlas, getAssetUrl, loadTerrain, validateImageSets } from "./imagery.mjs";
 import { countryTimeZoneColor, countryTimeZoneLabel, listTimeZones, timeZoneColor } from "./timezones.mjs";
+import { readSettings, writeSettings } from "./settings.mjs";
 
 const NUMBER_FORMAT = new Intl.NumberFormat("en-US");
 const COUNTRY_COLORS = { match: "#8fbd78", nonmatch: "#e0e3e4", unknown: "#d9bc86", outside: "#b9b2c8" };
@@ -85,8 +86,14 @@ async function initialize() {
     }
     const loadedSets = new Set();
     const loadingSets = new Map();
+    const imageProgress = new Map();
+    const timeZones = listTimeZones(geogrid.countries);
+    let restoringSettings = true;
     const state = {
         mode: "natural",
+        projection: "globe",
+        conditions: [],
+        matchMode: "all",
         imageSet: imageSets.sets[0].id,
         timeZone: "",
         selected: null,
@@ -116,6 +123,12 @@ async function initialize() {
     }, atlas.records);
     getElement("country-callouts").addEventListener("wheel", map.zoomFromWheel, { passive: false });
 
+    function updateUrl() {
+        if (restoringSettings) return;
+        const url = writeSettings(location.href, state, imageSets.sets[0].id, atlas);
+        if (url !== location.href) history.replaceState(history.state, "", url);
+    }
+
     function getImageSet() {
         return imageSets.sets.find(set => set.id === state.imageSet);
     }
@@ -134,6 +147,7 @@ async function initialize() {
     }
 
     function updateMap() {
+        updateUrl();
         const colors = new Map();
         const statuses = new Map();
         for (const country of atlas.records) {
@@ -229,7 +243,7 @@ async function initialize() {
                 button.title = countryTimeZoneLabel(sourceCountry);
             }
             if (!country.geometry) button.title = "No map geometry";
-            button.addEventListener("click", () => selectCountry(id, true));
+            button.addEventListener("click", () => selectCountry(state.selected === id ? null : id, true));
             item.append(button);
             fragment.append(item);
             displayed++;
@@ -288,12 +302,22 @@ async function initialize() {
         addFact(values, "Flag colors", categoryData?.flagColors
             ? categoryData.flagColors.map(color => atlas.colors.get(color)).join(", ") : unavailable);
         addFact(values, "Time zones", countryTimeZoneLabel(categoryData));
+        if (categoryData?.capital) {
+            addFact(values, "Capital names", categoryData.capital.names.join(", ") || "Unavailable");
+            for (const city of categoryData.capital.cities) {
+                addFact(values, city.name + " population", city.population !== null
+                    ? NUMBER_FORMAT.format(city.population) : "Unavailable", city.source);
+            }
+            addFact(values, "Capital is not largest recorded city", categoryData.capital.notLargest === null
+                ? "Unavailable" : categoryData.capital.notLargest ? "Yes" : "No");
+        }
         panel.append(values);
         if (categoryData?.borders && categoryData.borders.length !== categoryData.borderCount) {
             panel.append(makeElement("p", "GeoGrid adjusts border counts; listed neighbors can include nearby countries.", "data-note"));
         }
         const categorySource = makeElement("p", undefined, "source-links");
         appendSource(categorySource, geogrid.source, "GeoGrid combined data");
+        if (categoryData?.capital) appendSource(categorySource, geogrid.source.capitals, "GeoGrid capital data");
         panel.append(categorySource);
         panel.append(makeElement("h3", "Cities (Wikipedia)"));
         if (data?.cityCoverage?.status !== "complete") {
@@ -363,24 +387,52 @@ async function initialize() {
         if (focus) map.focusCity(city);
     }
 
+    function updateImageLoading() {
+        const set = getImageSet();
+        const progress = imageProgress.get(set.id);
+        const visible = state.mode === "imagery" && !loadedSets.has(set.id);
+        getElement("image-loading").hidden = !visible;
+        getElement("map").setAttribute("aria-busy", String(visible && !progress?.error));
+        if (!visible) return;
+        getElement("image-loading-label").textContent = progress?.error
+            ? "Couldn't load " + set.title.toLowerCase() + ". Switch away and back to retry."
+            : "Loading " + set.title.toLowerCase() + "...";
+        const meter = getElement("image-loading-progress");
+        meter.hidden = Boolean(progress?.error);
+        meter.max = progress?.total || 1;
+        meter.value = progress?.loaded || 0;
+        getElement("image-loading-count").textContent = !progress || progress.error ? "" :
+            progress.loaded === progress.total ? "Preparing map..." : progress.loaded + " / " + progress.total;
+    }
+
     async function ensureImages() {
         const set = getImageSet();
         if (loadedSets.has(set.id)) return;
         if (loadingSets.has(set.id)) return loadingSets.get(set.id);
+        const previousError = imageProgress.get(set.id)?.error;
+        imageProgress.delete(set.id);
+        updateImageLoading();
         const pending = (async () => {
-            getElement("map-status").textContent = "Loading " + set.title.toLowerCase() + "...";
-            const texture = await buildImageAtlas(countries, set, count => {
-                getElement("map-status").textContent = "Loading images: " + count;
+            const texture = await buildImageAtlas(countries, set, (loaded, total) => {
+                imageProgress.set(set.id, { loaded, total });
+                updateImageLoading();
             });
-            map.setTexture("images:" + set.id, texture);
+            await map.setTexture("images:" + set.id, texture);
             loadedSets.add(set.id);
-            getElement("map-status").textContent = "";
+            if (previousError && getElement("map-error").textContent === previousError.message) {
+                getElement("map-error").textContent = "";
+                getElement("map-error").hidden = true;
+            }
         })();
         loadingSets.set(set.id, pending);
         try {
             await pending;
+        } catch (error) {
+            imageProgress.set(set.id, { error });
+            throw error;
         } finally {
             loadingSets.delete(set.id);
+            updateImageLoading();
         }
     }
 
@@ -394,10 +446,13 @@ async function initialize() {
         updateMap();
         updateCountryList();
         updateDetails();
+        updateImageLoading();
         if (state.mode === "imagery") ensureImages().catch(showError);
     }
 
-    createCriteriaControls(atlas, (criteria, mode) => {
+    const criteriaControls = createCriteriaControls(atlas, (criteria, mode) => {
+        state.conditions = criteria;
+        state.matchMode = mode;
         state.query = compileAtlasQuery(atlas, criteria, mode);
         updateFilterPanel();
         updateMap();
@@ -414,9 +469,10 @@ async function initialize() {
         state.imageSet = getElement("image-set").value;
         updateMap();
         updateDetails();
+        updateImageLoading();
         ensureImages().catch(showError);
     });
-    for (const zone of listTimeZones(geogrid.countries)) {
+    for (const zone of timeZones) {
         const option = makeElement("option", zone);
         option.value = zone;
         getElement("timezone-view").append(option);
@@ -436,9 +492,11 @@ async function initialize() {
     });
     for (const type of ["globe", "flat"]) {
         getElement(type + "-view").addEventListener("click", () => {
+            state.projection = type;
             getElement("globe-view").setAttribute("aria-pressed", String(type === "globe"));
             getElement("flat-view").setAttribute("aria-pressed", String(type === "flat"));
             map.setProjection(type);
+            updateUrl();
         });
     }
     getElement("zoom-in").addEventListener("click", () => map.zoomBy(1.3));
@@ -459,15 +517,41 @@ async function initialize() {
             updateDetails();
         });
     }
-    if (window.matchMedia("(max-width: 520px)").matches) getElement("criteria-controls").closest("details").open = false;
+    if (window.matchMedia("(max-width: 520px)").matches) getElement("display-controls").open = false;
     const footer = getElement("footer-row");
     new ResizeObserver(() => {
         document.documentElement.style.setProperty("--footer-height", footer.getBoundingClientRect().height + "px");
     }).observe(footer);
-    updateMode();
+    function restoreSettings() {
+        restoringSettings = true;
+        const settings = readSettings(location.href, atlas, imageSets.sets, timeZones);
+        state.imageSet = settings.imageSet;
+        state.timeZone = settings.timeZone;
+        state.projection = settings.projection;
+        state.overlays = settings.overlays;
+        getElement("fill-mode").value = settings.mode;
+        getElement("image-set").value = settings.imageSet;
+        getElement("timezone-view").value = settings.timeZone;
+        getElement("show-capitals").checked = settings.overlays.capitals;
+        getElement("show-largest").checked = settings.overlays.largest;
+        getElement("city-count").value = String(settings.overlays.count);
+        getElement("city-count").disabled = !settings.overlays.largest;
+        getElement("globe-view").setAttribute("aria-pressed", String(settings.projection === "globe"));
+        getElement("flat-view").setAttribute("aria-pressed", String(settings.projection === "flat"));
+        map.setProjection(settings.projection);
+        criteriaControls.setSelection(settings.conditions, settings.matchMode);
+        getElement("settings-warning").textContent = settings.warnings.join(" ");
+        getElement("settings-warning").hidden = !settings.warnings.length;
+        updateMode();
+        restoringSettings = false;
+        updateUrl();
+    }
+    window.addEventListener("popstate", restoreSettings);
+    restoreSettings();
+    ensureImages().catch(showError);
     getElement("map-status").textContent = "Loading terrain...";
     const terrain = await loadTerrain("/category-map/img/natural-earth.jpg");
-    map.setTexture("natural", terrain);
+    await map.setTexture("natural", terrain);
     getElement("map-status").textContent = "";
 }
 

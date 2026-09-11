@@ -4,6 +4,7 @@ import path from "node:path";
 import { extractCatalog } from "./catalog.mjs";
 import { borderCount, COLORS, evaluate, flagColors, RULES } from "./rules.mjs";
 import { NUMERIC_METRICS, validateNumericCountry } from "../../games/world-map/js/numeric-ranges.mjs";
+import { applyCapitalData, CITY_URL } from "./capitals.mjs";
 
 export const GEOGRID_PATH = "games/world-map/data/geogrid.json";
 export const GEOGRID_SOURCES_PATH = "games/world-map/data/geogrid-sources.json";
@@ -134,27 +135,80 @@ async function readPrevious(root) {
     }
 }
 
+async function downloadSource(url, directory, filename) {
+    const response = await fetch(url, { signal: AbortSignal.timeout(60000), redirect: "error" });
+    if (!response.ok) throw new Error("GeoGrid source unavailable: " + response.status + " " + url);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (!bytes.length) throw new Error("Empty GeoGrid source: " + url);
+    await writeFile(path.join(directory, filename), bytes);
+    return { text: bytes.toString("utf8"), input: { url, sha256: hashBytes(bytes), bytes: bytes.length } };
+}
+
+function updateCapitalProvenance(snapshot, provenance) {
+    const codes = Object.keys(snapshot.countries);
+    const capitals = snapshot.choices.filter(choice => Object.hasOwn(CAPITAL_INPUTS, choice.id));
+    Object.assign(provenance.coverage, numericCoverage(snapshot), {
+        capitalNamesKnown: codes.filter(code => snapshot.countries[code].capital?.names.length).length,
+        capitalLargestKnown: codes.filter(code => snapshot.countries[code].capital.notLargest !== null).length,
+        unknownCountryChoices: snapshot.choices.reduce((sum, choice) => sum + choice.unknown.length, 0),
+        unknownByChoice: Object.fromEntries(snapshot.choices.filter(choice => choice.unknown.length).map(choice => [choice.key, choice.unknown.length])),
+        unavailableCategoryIds: [...new Set(capitals.filter(choice => choice.unknown.length === codes.length).map(choice => choice.id))],
+        unavailableChoiceCount: capitals.filter(choice => choice.unavailableReason).length,
+    });
+    provenance.matching = provenance.matching.filter(text =>
+        !text.startsWith("All four capital-category IDs") &&
+        !text.startsWith("Capital categories use ") &&
+        !text.startsWith("Combined.json is the only source") &&
+        !text.startsWith("Combined.json supplies all non-capital") &&
+        !text.startsWith("Numeric range facts are normalized"));
+    provenance.matching.push(
+        "Combined.json supplies all non-capital criterion facts. Capital supplementation never fills other missing fields or changes their memberships.",
+        NUMERIC_MATCHING[0],
+        ...CAPITAL_MATCHING,
+    );
+}
+
+export async function prepareCapitals({ root, directory }) {
+    const snapshot = JSON.parse(await readFile(path.join(root, GEOGRID_PATH), "utf8"));
+    const provenance = JSON.parse(await readFile(path.join(root, GEOGRID_SOURCES_PATH), "utf8"));
+    const { text, input } = await downloadSource(CITY_URL, directory, "cities.json");
+    const inputs = [...provenance.inputs.filter(item => item.url !== CITY_URL), input].sort((left, right) => left.url.localeCompare(right.url));
+    const revision = hashBytes(formatJson(inputs));
+    const fetchedAt = provenance.revision === revision ? provenance.fetchedAt : new Date().toISOString();
+    Object.assign(snapshot.source, { revision, fetchedAt, capitals: { url: CITY_URL, sha256: input.sha256, fetchedAt } });
+    applyCapitalData(snapshot, JSON.parse(text));
+    Object.assign(provenance, { revision, fetchedAt, inputs });
+    updateCapitalProvenance(snapshot, provenance);
+    validateCoverage(snapshot);
+    return {
+        files: [{ path: GEOGRID_PATH, content: formatJson(snapshot) }, { path: GEOGRID_SOURCES_PATH, content: formatJson(provenance) }],
+        summary: [
+            `Capital names: ${provenance.coverage.capitalNamesKnown}/${Object.keys(snapshot.countries).length} known`,
+            `Capital populations: ${provenance.coverage.numericKnownByMetric.capital_population} known`,
+            `Capital/largest-city comparisons: ${provenance.coverage.capitalLargestKnown} known`,
+            "Non-capital facts and memberships were preserved.",
+        ],
+    };
+}
+
 export async function prepareAtlas({ root, directory }) {
     const cache = path.join(directory, "geogrid-atlas");
     await mkdir(cache, { recursive: true });
     const inputs = [];
     async function download(url, filename) {
-        const response = await fetch(url, { signal: AbortSignal.timeout(60000), redirect: "error" });
-        if (!response.ok) throw new Error("GeoGrid source unavailable: " + response.status + " " + url);
-        const bytes = Buffer.from(await response.arrayBuffer());
-        if (!bytes.length) throw new Error("Empty GeoGrid source: " + url);
-        await writeFile(path.join(cache, filename), bytes);
-        inputs.push({ url, sha256: hashBytes(bytes), bytes: bytes.length });
-        return bytes.toString("utf8");
+        const { text, input } = await downloadSource(url, cache, filename);
+        inputs.push(input);
+        return text;
     }
     const html = await download(ATLAS_URL, "index.html");
     const scripts = [...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)].map(match => new URL(match[1], ATLAS_URL)).filter(url => /^\/js\/app\.[a-z0-9]+\.js$/.test(url.pathname));
     if (scripts.length !== 1 || scripts[0].origin !== new URL(ATLAS_URL).origin) throw new Error("Couldn't identify the public GeoGrid app bundle");
     const bundleUrl = scripts[0].href;
-    const [bundle, combinedText, registryText] = await Promise.all([
+    const [bundle, combinedText, registryText, cityText] = await Promise.all([
         download(bundleUrl, "app.js"),
         download(DATA_URL, "combined.json"),
         download(COUNTRY_URL, "countries.json"),
+        download(CITY_URL, "cities.json"),
     ]);
     const choices = extractCatalog(bundle);
     const geometry = JSON.parse(await readFile(path.join(root, "games/world-map/data/world.json"), "utf8"));
@@ -162,11 +216,15 @@ export async function prepareAtlas({ root, directory }) {
     const revision = hashBytes(formatJson(inputs));
     const previous = await readPrevious(root);
     const fetchedAt = previous?.revision === revision ? previous.fetchedAt : new Date().toISOString();
-    const source = { url: DATA_URL, atlasUrl: ATLAS_URL, bundleUrl, revision, fetchedAt };
+    const source = {
+        url: DATA_URL, atlasUrl: ATLAS_URL, bundleUrl, revision, fetchedAt,
+        capitals: { url: CITY_URL, sha256: inputs.find(input => input.url === CITY_URL).sha256, fetchedAt },
+    };
     const snapshot = buildSnapshot({
         choices, combined: JSON.parse(combinedText), registry: JSON.parse(registryText),
         geometry, source,
     });
+    applyCapitalData(snapshot, JSON.parse(cityText));
     validateCoverage(snapshot);
     const codes = Object.keys(snapshot.countries);
     const mapped = new Set(Object.values(snapshot.mapping).filter(Boolean));
@@ -203,6 +261,7 @@ export async function prepareAtlas({ root, directory }) {
             "Country and city details and imagery in the playbook remain separate from these category memberships.",
         ],
     };
+    updateCapitalProvenance(snapshot, provenance);
     return {
         files: [{ path: GEOGRID_PATH, content: formatJson(snapshot) }, { path: GEOGRID_SOURCES_PATH, content: formatJson(provenance) }],
         summary: [
@@ -211,7 +270,7 @@ export async function prepareAtlas({ root, directory }) {
             `Flag colors: ${coverage.flagColorsKnown}/${coverage.countryCount} known; ${coverage.flagColorsUnknown.length} unknown`,
             `Locations: ${coverage.locationsKnown}/${coverage.countryCount} known; ${coverage.locationsUnknown.length} unknown`,
             `Geometry: ${coverage.mappedGeometryCount}/${coverage.geometryCount} mapped; ${coverage.countriesWithoutGeometry.length} source countries without geometry`,
-            `Source limitation: ${coverage.unavailableChoiceCount} capital variants have no required facts in combined.json; every result is explicitly unknown`,
+            `Capital data: ${coverage.capitalNamesKnown} names, ${coverage.numericKnownByMetric.capital_population} populations, ${coverage.capitalLargestKnown} largest-city comparisons`,
         ],
     };
 }
@@ -219,15 +278,22 @@ export async function prepareAtlas({ root, directory }) {
 export function numericCoverage(snapshot) {
     const countries = Object.values(snapshot.countries);
     return {
-        numericKnownByMetric: Object.fromEntries(NUMERIC_METRICS.map(metric => [metric.key, countries.filter(country => country.numericValues[metric.key] !== null).length])),
+        numericKnownByMetric: Object.fromEntries(NUMERIC_METRICS.map(metric => [metric.key, countries.filter(country =>
+            [country.numericValues[metric.key]].flat().some(value => value !== null)).length])),
         timeZonesKnown: countries.filter(country => country.timeZones !== null).length,
         timeZonesUnknown: Object.keys(snapshot.countries).filter(code => snapshot.countries[code].timeZones === null),
     };
 }
 
 export const NUMERIC_MATCHING = [
-    "Numeric range facts are normalized from combined.json into country.numericValues; missing metrics, including all capital populations, remain null. No numeric values are inferred from category memberships or other datasets.",
+    "Numeric range facts are normalized into country.numericValues from combined.json, except capital populations from GeoGrid common/cities.json. Missing values remain null; values aren't inferred from category memberships.",
     "Range controls derive strict greater-than, strict less-than, and equality memberships from numericValues without changing the 441 source choices. Stops are source picker thresholds plus zero and observed negative minima; border counts include every integer through the observed maximum. Flag counts use reviewed picker counts. Derived choices identify their source field and operation.",
     "All coastline range directions retain GeoGrid's has-coastline guard: landlocked countries don't match, and a missing landlocked flag produces unknown. Border counts retain GeoGrid overrides and nearby-mode exclusions; flag color counts count normalized source colors.",
     "Country timeZones preserve every complete string from combined.json geogrid.politicalInfo.timeZones, including fractional-hour offsets. Missing fields produce null. No time zones or geometry are inferred.",
+];
+
+const CAPITAL_MATCHING = [
+    "Capital categories use GeoGrid common/cities.json for capital names, populations, and comparisons with other cities. Missing capital facts remain unknown; population figures retain the source's scope and aren't substituted with metro-area or Wikipedia overlay figures.",
+    "Capital categories use any designated capital, preserving multiple names and populations. Each numeric bound and exact condition is evaluated independently; missing capital populations produce unknown unless another capital proves a match.",
+    "Capital categories use the largest recorded city for comparisons, not a verified exhaustive census ranking. Fewer than two populated cities, missing capital populations, or missing other populations that could change a negative answer leave the comparison unknown. A tie with a capital isn't a positive match.",
 ];

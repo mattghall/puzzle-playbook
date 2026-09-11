@@ -14,6 +14,7 @@ export function createMap(canvas, countries, layers, callbacks, calloutCountries
     const gpu = createRasterRenderer(callbacks.onError, IMAGE_ATLAS_WIDTH);
     const worker = new Worker(new URL("./raster-worker.mjs", import.meta.url));
     const textures = new Set();
+    const pendingTextures = new Map();
     const pointers = new Map();
     const sphere = { type: "Sphere" };
     const land = { type: "FeatureCollection", features: countries };
@@ -207,6 +208,8 @@ export function createMap(canvas, countries, layers, callbacks, calloutCountries
         const message = event.data;
         if (message.type === "ready") {
             textures.add(message.id);
+            pendingTextures.get(message.id)?.resolve();
+            pendingTextures.delete(message.id);
             if (appearance.texture === message.id) requestDraw();
             return;
         }
@@ -229,7 +232,10 @@ export function createMap(canvas, countries, layers, callbacks, calloutCountries
     };
     worker.onerror = function(event) {
         busy = false;
-        callbacks.onError(new Error(event.message || "Map rendering failed"));
+        const error = new Error(event.message || "Map rendering failed");
+        for (const pending of pendingTextures.values()) pending.reject(error);
+        pendingTextures.clear();
+        callbacks.onError(error);
     };
 
     function scheduleSettle() {
@@ -432,8 +438,12 @@ export function createMap(canvas, countries, layers, callbacks, calloutCountries
                 gpu.setTexture(id, image);
                 textures.add(id);
                 requestDraw();
+                return Promise.resolve();
             } else {
-                worker.postMessage({ type: "texture", id, width: image.width, height: image.height, buffer: image.data.buffer }, [image.data.buffer]);
+                return new Promise((resolve, reject) => {
+                    pendingTextures.set(id, { resolve, reject });
+                    worker.postMessage({ type: "texture", id, width: image.width, height: image.height, buffer: image.data.buffer }, [image.data.buffer]);
+                });
             }
         },
         focusCountry(id) {

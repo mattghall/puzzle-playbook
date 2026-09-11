@@ -23,6 +23,7 @@
         </header>
         <div id="map-status" role="status">Loading map...</div>
         <p id="map-error" role="alert" hidden></p>
+        <p id="settings-warning" class="data-note" role="status" hidden></p>
         <div class="map-layout">
             <section class="map-panel" aria-label="Category map">
                 <section id="active-filters" class="active-filters" aria-labelledby="active-filters-heading">
@@ -42,14 +43,36 @@
                     <canvas id="map" tabindex="0" aria-label="Category map. Drag to rotate or pan. Use arrow keys to move, plus or minus to zoom, and Home to reset. Select countries from the list or labeled callouts."></canvas>
                     <div id="country-callouts" class="country-callouts" role="group" aria-label="Small countries" hidden></div>
                     <div id="map-tooltip" class="map-tooltip" role="status" hidden></div>
+                    <div id="image-loading" class="image-loading" role="status" hidden>
+                        <span id="image-loading-label">Loading flags...</span>
+                        <progress id="image-loading-progress" aria-label="Image loading progress" max="1" value="0"></progress>
+                        <span id="image-loading-count"></span>
+                    </div>
                 </div>
                 <div class="map-legend" id="map-legend"></div>
                 <div id="timezone-legend" class="timezone-legend" role="group" aria-label="Time zone color key" hidden></div>
             </section>
-            <aside class="map-sidebar">
-                <details class="controls-panel" open>
+            <aside class="map-sidebar country-sidebar" aria-label="Countries and details">
+                <section class="country-panel" aria-labelledby="countries-heading">
+                    <h2 id="countries-heading">Countries</h2>
+                    <label class="sr-only" for="country-search">Search countries</label>
+                    <input type="search" id="country-search" placeholder="Search countries" autocomplete="off">
+                    <select id="result-filter" aria-label="Filter country results" hidden>
+                        <option value="all">All countries</option>
+                        <option value="match">Matches</option>
+                        <option value="unknown">Unknown</option>
+                        <option value="nonmatch">Nonmatches</option>
+                        <option value="outside">Outside GeoGrid</option>
+                    </select>
+                    <p id="result-count" class="data-note"></p>
+                    <ul id="country-list" class="country-list"></ul>
+                    <section id="country-details" class="detail-panel" aria-label="Country details" hidden></section>
+                </section>
+            </aside>
+            <aside class="map-sidebar controls-sidebar" aria-label="Map controls">
+                <details id="display-controls" class="controls-panel" open>
                     <summary>Display</summary>
-                    <label for="fill-mode">Countries</label>
+                    <label for="fill-mode">Map Type</label>
                     <select id="fill-mode">
                         <option value="natural">Natural</option>
                         <option value="blank">White</option>
@@ -80,40 +103,27 @@
                         </select>
                         <p id="city-coverage" class="data-note" hidden></p>
                     </fieldset>
-                    <fieldset id="criteria-controls" hidden>
-                        <legend>GeoGrid categories</legend>
-                        <label for="category-section">Section</label>
-                        <select id="category-section">
-                            <option value="">All sections</option>
-                        </select>
-                        <label for="category-search">Find a condition</label>
-                        <input type="search" id="category-search" placeholder="Red, population, borders..." autocomplete="off">
-                        <p id="category-count" class="data-note" role="status"></p>
-                        <div id="category-choices" class="category-choices"></div>
-                    </fieldset>
                 </details>
-                <section class="country-panel" aria-labelledby="countries-heading">
-                    <h2 id="countries-heading">Countries</h2>
-                    <label class="sr-only" for="country-search">Search countries</label>
-                    <input type="search" id="country-search" placeholder="Search countries" autocomplete="off">
-                    <select id="result-filter" aria-label="Filter country results" hidden>
-                        <option value="all">All countries</option>
-                        <option value="match">Matches</option>
-                        <option value="unknown">Unknown</option>
-                        <option value="nonmatch">Nonmatches</option>
-                        <option value="outside">Outside GeoGrid</option>
+                <details id="criteria-controls" class="controls-panel" open hidden>
+                    <summary>GeoGrid categories</summary>
+                    <label for="category-section">Section</label>
+                    <select id="category-section">
+                        <option value="">All sections</option>
                     </select>
-                    <p id="result-count" class="data-note"></p>
-                    <ul id="country-list" class="country-list"></ul>
-                </section>
-                <section id="country-details" class="detail-panel" aria-label="Country details" hidden></section>
+                    <label for="category-search">Find a condition</label>
+                    <input type="search" id="category-search" placeholder="Red, population, borders..." autocomplete="off">
+                    <p id="category-count" class="data-note" role="status"></p>
+                    <div id="category-choices" class="category-choices"></div>
+                </details>
                 <details class="source-panel">
                     <summary>Sources</summary>
                     <p>Geography: <a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noopener">Natural Earth</a>.</p>
                     <p>Categories: <a href="https://cdn-assets.teuteuf.fr/data/geogrid/combined.json" target="_blank" rel="noopener">GeoGrid combined data</a>, using the <a href="https://www.geogridgame.com/" target="_blank" rel="noopener">Categories Atlas</a>.</p>
                     <p id="atlas-limitations" class="data-note" hidden></p>
                     <div id="filter-warnings" hidden></div>
-                    <p class="data-note">All category facts come from GeoGrid's combined dataset. Counts include countries without map geometry.</p>
+                    <p>Capital categories: <a href="https://cdn-assets.teuteuf.fr/data/common/cities.json" target="_blank" rel="noopener">GeoGrid city data</a>.</p>
+                    <p class="data-note">Capital facts use GeoGrid's city dataset. All other category facts and missing values follow its combined dataset. Counts include countries without map geometry.</p>
+                    <p class="data-note">Capital populations retain GeoGrid's recorded figures; dates and city boundaries aren't standardized. Multiple capitals are evaluated separately. Missing evidence stays unknown.</p>
                     <p>Cities: <a href="https://en.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>. Images: <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>.</p>
                     <p>Images are cropped and transformed to country shapes.</p>
                     <p id="geometry-note" class="data-note" hidden></p>

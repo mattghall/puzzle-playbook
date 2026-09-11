@@ -36,6 +36,19 @@ Word500 is unchanged.
 The home page links to it. Source files and update commands retain the internal
 `world-map` name.
 Country fills: natural, white, neighbor colors, images, and criteria.
+Flags preload in the background when the page opens. Images view shows a loading
+panel with progress until its image set is ready; other views remain usable.
+Display and filter settings stay in the URL, so links can be copied, bookmarked,
+and reopened. For example, `/category-map?display=images&view=map` opens flags on
+the flat map. `display` also accepts `natural`, `white`, `neighbors`, `criteria`,
+and `timezones`. Filters use readable parameters such as `flag-color=red`,
+`official-language=arabic`, `rainfall-min=500`, and `olympic-medals-exact=0`.
+Repeat a parameter to select multiple values; prefix it with `not-` to exclude it,
+as in `not-flag-color=red`. Older `filter`/`exclude` links still open and are
+rewritten using friendly names. `match=any` uses Any instead of All. `images`, `timezone`, `capitals=1`,
+`largest=1`, and `cities=1` through `cities=10` store the remaining display settings.
+Defaults are omitted. Unknown filters or invalid settings show a warning.
+Browsing categories, selected countries, and the current pan/zoom aren't saved.
 Small countries have compact flag cutouts in image mode and colored bubbles in
 criteria mode. Names appear on hover, keyboard focus, or selection. Short leader
 lines point to their locations. Marker boxes occupy at most 4% of the map and
@@ -78,6 +91,11 @@ Use the x to remove one, click its name to toggle exclusion, or use Clear all.
 Other fill modes show them as saved, not applied.
 Hover a country or tap it on mobile to see its name on the map.
 Click or tap empty map space to clear the country and city selection.
+On desktop, countries and their details sit left of the map, with controls on the
+right. Display and GeoGrid categories have independent drawers. Clicking the
+selected country's name again clears its selection. The page fits the viewport;
+the country and map panels have equal height, with scrolling inside the side panels.
+Narrow screens keep the map above the side panels in a scrollable content area.
 
 The Time zones view colors countries by their GeoGrid UTC offsets. Purple indicates
 multiple zones; choose an offset from the dropdown or color key to highlight all
@@ -86,10 +104,20 @@ This view uses country-level facts, not internal timezone boundary polygons or
 a live daylight-saving clock.
 
 The snapshot includes 127 category IDs and 441 variants for 249 countries.
-Twenty capital-related variants remain explicitly unknown: combined.json lacks
-capital names and city populations. GeoGrid uses its separate cities dataset for
-those; this helper doesn't supplement the requested combined-only source.
-Other missing source fields also remain unknown.
+The 20 capital-related variants use GeoGrid's separate `common/cities.json`:
+capital names are available for 243 countries/territories, and at least one capital
+population is available for 242. Multiple capitals are kept separately; each
+population bound or exact match can match any capital. Missing populations remain
+unknown unless another capital proves a match. Capital initials use normalized
+English names, without removing articles such as "The".
+
+The capital/largest-city comparison has sufficient evidence for 164 countries.
+It compares recorded cities, not an exhaustive census ranking. Missing populations
+that could change the result and countries with fewer than two populated cities
+remain unknown. Places without a designated capital aren't assigned one.
+GeoGrid doesn't supply population dates or consistent city/metro boundaries;
+these are its recorded figures, not standardized current census counts.
+All non-capital category facts and missing values remain from `combined.json`.
 
 Flag colors follow GeoGrid's eleven-color palette: black, white, gray, pink, red,
 orange, yellow, green, blue, purple, and brown. Shades aren't separate choices.
@@ -109,6 +137,7 @@ npm run world-map:update -- --scope facts
 npm run world-map:update -- --scope cities
 npm run world-map:update -- --scope images
 npm run world-map:update -- --scope atlas
+npm run world-map:update -- --scope capitals
 git diff -- games/world-map/data games/world-map/img
 npm run build
 ```
@@ -117,7 +146,9 @@ Review the diff and `/category-map` locally before requesting a release.
 The update command doesn't commit, push, or publish.
 Use `--country USA` to limit a Wikipedia or image refresh to one country.
 Atlas refreshes update the entire category dataset together. They discover the
-current public atlas, refresh combined data, and rebuild category memberships.
+current public atlas, refresh combined and city data, and rebuild category memberships.
+Capital-only refreshes fetch just GeoGrid's cities and preserve every non-capital
+fact and membership, including unknowns. They don't update Wikipedia city overlays.
 New or changed unsupported category rules fail before either snapshot is replaced.
 Snapshot files must be clean before a refresh. Failed updates preserve existing data.
 Concurrent edits aren't overwritten. New Wikipedia coverage requires a source mapping;

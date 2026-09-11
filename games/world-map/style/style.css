@@ -4,7 +4,15 @@
     --footer-height: 92px;
 }
 
+html,
 body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    position: fixed;
+    inset: 0;
     margin: 0;
     background: #d9d9d9;
     color: #24292d;
@@ -16,9 +24,17 @@ body {
 }
 
 .world-map {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--footer-height));
+    box-sizing: border-box;
     max-width: 1500px;
     margin: 0 auto;
-    padding: 16px 24px calc(var(--footer-height) + 20px);
+    padding: 16px 24px 12px;
+}
+
+.world-map > :not(.map-layout) {
+    flex-shrink: 0;
 }
 
 .map-header {
@@ -73,15 +89,19 @@ body {
 
 .map-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 280px;
-    align-items: start;
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
+    grid-template-areas: "countries map controls";
+    align-items: stretch;
     gap: 18px;
+    overflow: hidden;
 }
 
 .map-panel {
-    position: sticky;
-    top: 10px;
+    grid-area: map;
     min-width: 0;
+    min-height: 0;
     padding: 12px;
     border: 1px solid #b9bdbf;
     border-radius: 8px;
@@ -102,6 +122,33 @@ body {
 
 .map-viewport {
     position: relative;
+}
+
+.image-loading {
+    position: absolute;
+    z-index: 3;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: grid;
+    gap: 8px;
+    width: min(260px, calc(100% - 32px));
+    padding: 16px;
+    border: 1px solid #71818a;
+    border-radius: 6px;
+    background: #fffffff2;
+    color: #24292d;
+    text-align: center;
+    pointer-events: none;
+}
+
+.image-loading progress {
+    width: 100%;
+    accent-color: #426d84;
+}
+
+#image-loading-count {
+    font-size: 12px;
 }
 
 .active-filters {
@@ -337,6 +384,84 @@ body {
     gap: 12px;
     min-width: 0;
     font-size: 14px;
+}
+
+.country-sidebar {
+    grid-area: countries;
+}
+
+.controls-sidebar {
+    grid-area: controls;
+}
+
+@media (min-width: 1051px) {
+    .map-panel {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .map-panel > :not(.map-viewport) {
+        flex-shrink: 0;
+    }
+
+    .map-viewport {
+        flex: 1;
+        min-height: 0;
+    }
+
+    #map {
+        position: absolute;
+        inset: 0;
+        height: 100%;
+    }
+
+    .map-sidebar {
+        min-height: 0;
+        align-content: start;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        overscroll-behavior-y: contain;
+    }
+
+    .country-sidebar {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .country-panel {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .country-panel > :not(.country-list):not(.detail-panel) {
+        flex-shrink: 0;
+    }
+
+    .country-panel .detail-panel {
+        flex-shrink: 1;
+        max-height: 45%;
+        overflow-y: auto;
+        margin-top: 12px;
+        border: 0;
+        border-top: 1px solid #babec0;
+        border-radius: 0;
+        padding: 12px 0 0;
+    }
+
+    .controls-sidebar .category-choices {
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    .country-sidebar .country-list {
+        flex: 1;
+        min-height: 0;
+        max-height: none;
+        overscroll-behavior-y: contain;
+    }
 }
 
 .controls-panel,
@@ -748,14 +873,20 @@ body {
     color: #8d281d;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 1050px) {
     .world-map {
-        padding: 12px 12px calc(var(--footer-height) + 16px);
+        padding: 12px;
     }
 
     .map-layout {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-areas: "map map" "countries controls";
+        grid-auto-rows: max-content;
+        align-items: start;
+        align-content: start;
         gap: 12px;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
     }
 
     .map-panel {
@@ -778,13 +909,13 @@ body {
     }
 
     .map-sidebar {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: start;
     }
 }
 
-@media (max-width: 520px) {
-    .map-sidebar {
+@media (max-width: 650px) {
+    .map-layout {
         grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "map" "controls" "countries";
     }
 }

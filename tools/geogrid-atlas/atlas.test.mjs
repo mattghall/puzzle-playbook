@@ -170,7 +170,7 @@ test("bundled locations cover all source-only countries, including Tuvalu, witho
 test("numeric and time-zone coverage agree with the enriched snapshot and retain authoritative provenance", () => {
     const coverage = numericCoverage(SNAPSHOT);
     for (const [key, value] of Object.entries(coverage)) assert.deepEqual(PROVENANCE.coverage[key], value);
-    assert.equal(coverage.numericKnownByMetric.capital_population, 0);
+    assert.equal(coverage.numericKnownByMetric.capital_population, 242);
     assert.equal(coverage.numericKnownByMetric.flag_color_count, 249);
     assert.equal(coverage.timeZonesKnown, 249);
     assert.equal(SNAPSHOT.source.revision, PROVENANCE.revision);
@@ -245,7 +245,7 @@ test("name rules distinguish accent normalization, letter counts, and word separ
     assert.equal(match(record({}, { name: "Albania" }), "name_start_end_same_letter"), true);
 });
 
-test("capital choices report missing authoritative facts and never use a supplemental city dataset", () => {
+test("combined-only rule evaluation keeps missing capitals unknown while the snapshot uses city facts", () => {
     const country = record();
     const cities = [
         { countryCode: "AA", names: { en: "Álpha" }, capital: true, population: 50000 },
@@ -257,11 +257,12 @@ test("capital choices report missing authoritative facts and never use a supplem
     for (const item of capitalChoices) {
         assert.equal(evaluate(country, item, {}, cities), null);
         const bundled = SNAPSHOT.choices.find(entry => entry.key === item.key);
-        assert.equal(bundled.unknown.length, 249);
-        assert.equal(bundled.matches.length, 0);
-        assert.match(bundled.unavailableReason, /combined.json doesn't contain/);
+        assert.ok(bundled.unknown.length < 249);
+        assert.ok(bundled.matches.length > 0);
+        assert.equal(bundled.unavailableReason, undefined);
+        assert.ok(bundled.sources.some(source => source.url.endsWith("/cities.json")));
     }
-    assert.equal(PROVENANCE.inputs.some(input => input.url.endsWith("/cities.json")), false);
+    assert.equal(PROVENANCE.inputs.some(input => input.url.endsWith("/cities.json")), true);
 });
 
 test("static extraction reads literal metadata, never runs the remote application, and excludes USA", () => {
