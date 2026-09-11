@@ -6,15 +6,14 @@
 # Nothing here touches cache busting. Webpack already gives every bundle a contenthash in
 # its filename, so a new build is a new URL and there is no ?v= to keep in step.
 #
-# The landing page keeps its own copy of the footer rather than using the shared partial,
-# so both are rewritten together and cannot drift apart.
+# Every page gets its version number from the shared footer.
 #
 # Run by the Version workflow on every push to main. Prints the new version and nothing
 # else, so the workflow can read it. Anything that goes wrong is a hard failure: a version
 # that silently stops moving is exactly what this exists to prevent.
 
 file="shared/html/footer.html"
-pages="shared/html/footer.html src/landing/index.html"
+pages="shared/html/footer.html"
 
 if [ ! -f "$file" ]; then
   echo "bump-version: $file is missing" >&2

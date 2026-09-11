@@ -8,14 +8,12 @@
         </div>
         <div class="social text-center col-12 px-1 px-md-2 pb-1">
             <section>
-                <a class="btn btn-outline-light btn-floating m-1" href="{{playUrl}}" target="_blank"
-                    role="button">Play {{playName}}</a>
-                <a class="btn btn-outline-light btn-floating m-1" href="https://playbook.trailmatt.com"
-                    role="button">Playbook Home</a>
+                {{playButton}}
+                {{playbookHomeButton}}
                 <a class="btn btn-outline-light btn-floating m-1" href="https://games.mattghall.com" target="_blank"
                     role="button">Games Home</a>
                 <a class="btn btn-outline-light btn-floating m-1" href="https://github.com/mattghall/puzzle-playbook"
-                    target="_blank" role="button"><i data-feather="github"></i></a>
+                    target="_blank" role="button">{{githubIcon}}</a>
             </section>
         </div>
     </div>

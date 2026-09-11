@@ -1,0 +1,5 @@
+# Keep /bank/ out of search results.
+
+User-agent: *
+Allow: /
+Disallow: /bank/
