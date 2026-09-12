@@ -7,8 +7,6 @@
     "start": "npm run build && node tools/dev-server.mjs",
     "build": "webpack --config webpack.config.js",
     "watch": "webpack --watch",
-    "world-map:update": "node tools/world-map/update.mjs",
-    "world-map:check": "node tools/world-map.test.mjs && node --test tools/world-map/update.test.mjs tools/world-map-atlas.test.mjs tools/world-map-callouts.test.mjs tools/world-map-controls.test.mjs tools/world-map-numeric.test.mjs tools/world-map-loading.test.mjs tools/world-map-settings.test.mjs tools/geogrid-atlas/*.test.mjs",
     "clean": "rm -rf dist"
   },
   "keywords": [],
@@ -16,13 +14,10 @@
   "license": "ISC",
   "dependencies": {
     "bootstrap": "^5.3.3",
-    "d3-geo": "3.1.1",
     "feather-icons": "^4.29.2",
-    "jquery": "^3.7.1",
-    "topojson-client": "3.1.0"
+    "jquery": "^3.7.1"
   },
   "devDependencies": {
-    "acorn": "8.12.1",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^7.1.2",
     "css-minimizer-webpack-plugin": "^7.0.0",

@@ -15,8 +15,7 @@ const playLinks = {
     weaver: { name: 'Weaver', url: 'https://wordwormdormdork.com/weaver/' },
     wordle: { name: 'Wordle', url: 'https://www.nytimes.com/games/wordle' }
 };
-const gameSources = { 'category-map': 'world-map' };
-const games = [...Object.keys(playLinks), ...Object.keys(gameSources)];
+const games = Object.keys(playLinks);
 
 const footerTemplate = fs.readFileSync(path.resolve(__dirname, 'shared/html/footer.html'), 'utf8').trimEnd();
 const buttonClass = 'btn btn-outline-light btn-floating m-1';
@@ -43,11 +42,10 @@ const gameEntries = {};
 const gameCopies = [];
 const gamePages = [];
 games.forEach((game) => {
-    const source = gameSources[game] || game;
-    gameEntries[game + '/main'] = './games/' + source + '/js/main.js';
+    gameEntries[game + '/main'] = './games/' + game + '/js/main.js';
     // The tags are injected rather than hardcoded so the hashed filenames stay in sync.
     gamePages.push(new HtmlWebpackPlugin({
-        template: 'games/' + source + '/index.html',
+        template: 'games/' + game + '/index.html',
         filename: path.join(game, 'index.html'),
         chunks: [game + '/main'],
         inject: 'head',
@@ -55,8 +53,8 @@ games.forEach((game) => {
         minify: false,
         templateParameters: { footer: renderFooter(game) },
     }));
-    gameCopies.push({ from: 'games/' + source + '/manifest.json', to: path.join(dist, game, 'manifest.json'), noErrorOnMissing: true });
-    gameCopies.push({ from: 'games/' + source + '/js/service-worker.js', to: path.join(dist, game, 'service-worker.js'), noErrorOnMissing: true });
+    gameCopies.push({ from: 'games/' + game + '/manifest.json', to: path.join(dist, game, 'manifest.json'), noErrorOnMissing: true });
+    gameCopies.push({ from: 'games/' + game + '/js/service-worker.js', to: path.join(dist, game, 'service-worker.js'), noErrorOnMissing: true });
 });
 
 module.exports = {
@@ -101,12 +99,6 @@ module.exports = {
         new CopyWebpackPlugin({
             patterns: [
                 ...gameCopies,
-                { from: 'games/world-map/data', to: path.join(dist, 'category-map/data') },
-                { from: 'games/world-map/img', to: path.join(dist, 'category-map/img') },
-                { from: 'node_modules/d3-geo/LICENSE', to: path.join(dist, 'category-map/licenses/d3-geo.txt') },
-                { from: 'node_modules/d3-array/LICENSE', to: path.join(dist, 'category-map/licenses/d3-array.txt') },
-                { from: 'node_modules/internmap/LICENSE', to: path.join(dist, 'category-map/licenses/internmap.txt') },
-                { from: 'node_modules/topojson-client/LICENSE', to: path.join(dist, 'category-map/licenses/topojson-client.txt') },
                 { from: 'games/wordle/wordle-guesses-LICENSE.txt', to: path.join(dist, 'wordle/wordle-guesses-LICENSE.txt') },
                 { from: 'src/landing/style.css', to: path.join(dist, 'landing.css') },
                 // Copied rather than left in dist, which is cleaned on every build.
